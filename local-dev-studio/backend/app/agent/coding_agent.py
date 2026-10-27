@@ -2435,11 +2435,16 @@ export function ${{item.id.replace(/[^a-zA-Z0-9]/g, '')}}Motion() {{
         template: str = "nextjs",
         skills: Optional[List[str]] = None,
     ) -> AgentRunReport:
-        active_skills = list(dict.fromkeys(["tokless", "taste-skill", *(skills or [])]))
+        active_skills = list(dict.fromkeys(["tokless", *(skills or [])]))
+        has_taste_skill = any(
+            s == "taste-skill" or s.startswith("taste-") for s in active_skills
+        )
         taste_meta = self._infer_taste_skill_profile(prompt, prompt, active_skills)
         taste_badge = (
             f" | TasteSkill Dials [DV={taste_meta['design_variance']} "
             f"MI={taste_meta['motion_intensity']} VD={taste_meta['visual_density']}]"
+            if has_taste_skill
+            else ""
         )
         ws_path = self.docker_manager.get_workspace_path(project_id)
         container_info = self.docker_manager.ensure_container(project_id)

@@ -218,7 +218,7 @@ export const useStudioStore = create<StudioState>((set) => ({
   themeTone: "obsidian-dark",
   commandPaletteOpen: false,
   availableSkills: [],
-  selectedSkills: ["tokless", "taste-skill"],
+  selectedSkills: ["tokless"],
   chatHistory: [],
   files: [],
   activeFilePath: "app/page.tsx",

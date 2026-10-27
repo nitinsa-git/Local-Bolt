@@ -174,7 +174,7 @@ export function AgentConsole() {
         setTemplateLocked(Boolean(meta.template_locked));
         if (Array.isArray(meta.skills)) {
           const withDefaults = Array.from(
-            new Set(["tokless", "taste-skill", ...meta.skills])
+            new Set(["tokless", ...meta.skills])
           );
           setSelectedSkills(withDefaults);
         }
@@ -251,8 +251,13 @@ export function AgentConsole() {
   }, [chatHistory.length, activeMissionPrompt, steps.length]);
 
   const handleQuickRemoveSkill = async (skillId: string) => {
-    const nextSkills = selectedSkills.filter((id) => id !== skillId);
-    toggleSkill(skillId);
+    const isTasteSkill = skillId === "taste-skill" || skillId.startsWith("taste-");
+    const nextSkills = isTasteSkill
+      ? selectedSkills.filter(
+          (id) => id !== skillId && !(skillId === "taste-skill" && id.startsWith("taste-"))
+        )
+      : selectedSkills.filter((id) => id !== skillId);
+    setSelectedSkills(nextSkills);
     try {
       await fetch(`${BACKEND_HTTP}/api/projects/${projectId}/skills`, {
         method: "PUT",
@@ -296,7 +301,10 @@ export function AgentConsole() {
       "taste-gpt-strict",
       "taste-redesign-audit",
     ];
-    const nextSkills = Array.from(new Set([...selectedSkills, ...tasteIds]));
+    const hasAnyTaste = selectedSkills.some((id) => tasteIds.includes(id));
+    const nextSkills = hasAnyTaste
+      ? selectedSkills.filter((id) => !tasteIds.includes(id))
+      : Array.from(new Set([...selectedSkills, "taste-skill"]));
     setSelectedSkills(nextSkills);
     try {
       await fetch(`${BACKEND_HTTP}/api/projects/${projectId}/skills`, {
@@ -305,7 +313,9 @@ export function AgentConsole() {
         body: JSON.stringify({ skills: nextSkills }),
       });
       appendConsoleLog(
-        `[TasteSkill V2] Equipped TasteSkill Anti-Slop Art Direction Pack (${nextSkills.length} active) on workspace '${projectId}'`
+        hasAnyTaste
+          ? `[TasteSkill V2] Disabled TasteSkill on workspace '${projectId}'`
+          : `[TasteSkill V2] Enabled TasteSkill V2 on workspace '${projectId}'`
       );
     } catch (e) {
       console.warn("Failed to persist TasteSkill pack:", e);
@@ -813,75 +823,87 @@ export function AgentConsole() {
             </button>
           </div>
 
-          {/* TasteSkill V2 Preset Direction Bar */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5 shrink-0">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mr-1 shrink-0">
-              Taste:
-            </span>
-            {(
-              [
-                {
-                  id: "taste-skill",
-                  label: "⚡ Auto V2",
-                  dials: "DV=6 MI=6 VD=5",
-                },
-                {
-                  id: "taste-minimalist-ui",
-                  label: "◻ Minimalist",
-                  dials: "DV=6 MI=3 VD=3",
-                },
-                {
-                  id: "taste-soft-luxury",
-                  label: "✦ Soft",
-                  dials: "DV=5 MI=6 VD=3",
-                },
-                {
-                  id: "taste-gpt-strict",
-                  label: "◢ Strict Bento",
-                  dials: "DV=8 MI=7 VD=5",
-                },
-                {
-                  id: "taste-redesign-audit",
-                  label: "⟳ Audit",
-                  dials: "DV=6 MI=5 VD=7",
-                },
-              ] as const
-            ).map((preset) => {
-              const isSelected =
-                preset.id === "taste-skill"
-                  ? selectedSkills.includes("taste-skill") &&
-                    !selectedSkills.some((s) =>
-                      [
-                        "taste-minimalist-ui",
-                        "taste-soft-luxury",
-                        "taste-gpt-strict",
-                        "taste-redesign-audit",
-                      ].includes(s)
-                    )
-                  : selectedSkills.includes(preset.id);
-              return (
-                <button
-                  key={preset.id}
-                  type="button"
-                  onClick={() =>
-                    handleSelectTastePreset(
-                      preset.id,
-                      preset.label,
-                      preset.dials
-                    )
-                  }
-                  title={`TasteSkill Preset: ${preset.label} (${preset.dials})`}
-                  className={`px-2 py-0.5 rounded-lg border text-[10px] font-semibold whitespace-nowrap transition ${
-                    isSelected
-                      ? "bg-indigo-500/25 border-indigo-400/50 text-indigo-100"
-                      : "bg-slate-950/80 border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20"
-                  }`}
-                >
-                  {preset.label}
-                </button>
-              );
-            })}
-          </div>
+          {/* TasteSkill V2 Preset Direction Bar — Toggled ON only when a TasteSkill is selected */}
+          {selectedSkills.some(
+            (id) => id === "taste-skill" || id.startsWith("taste-")
+          ) && (
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5 shrink-0">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mr-1 shrink-0">
+                Taste:
+              </span>
+              {(
+                [
+                  {
+                    id: "taste-skill",
+                    label: "⚡ Auto V2",
+                    dials: "DV=6 MI=6 VD=5",
+                  },
+                  {
+                    id: "taste-minimalist-ui",
+                    label: "◻ Minimalist",
+                    dials: "DV=6 MI=3 VD=3",
+                  },
+                  {
+                    id: "taste-soft-luxury",
+                    label: "✦ Soft",
+                    dials: "DV=5 MI=6 VD=3",
+                  },
+                  {
+                    id: "taste-gpt-strict",
+                    label: "◢ Strict Bento",
+                    dials: "DV=8 MI=7 VD=5",
+                  },
+                  {
+                    id: "taste-redesign-audit",
+                    label: "⟳ Audit",
+                    dials: "DV=6 MI=5 VD=7",
+                  },
+                ] as const
+              ).map((preset) => {
+                const isSelected =
+                  preset.id === "taste-skill"
+                    ? selectedSkills.includes("taste-skill") &&
+                      !selectedSkills.some((s) =>
+                        [
+                          "taste-minimalist-ui",
+                          "taste-soft-luxury",
+                          "taste-gpt-strict",
+                          "taste-redesign-audit",
+                        ].includes(s)
+                      )
+                    : selectedSkills.includes(preset.id);
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() =>
+                      handleSelectTastePreset(
+                        preset.id,
+                        preset.label,
+                        preset.dials
+                      )
+                    }
+                    title={`TasteSkill Preset: ${preset.label} (${preset.dials})`}
+                    className={`px-2 py-0.5 rounded-lg border text-[10px] font-semibold whitespace-nowrap transition ${
+                      isSelected
+                        ? "bg-indigo-500/25 border-indigo-400/50 text-indigo-100"
+                        : "bg-slate-950/80 border-white/[0.08] text-slate-400 hover:text-slate-200 hover:border-white/20"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={handleEquipTasteSkillPack}
+                title="Hide Taste presets (unselect TasteSkill)"
+                className="ml-auto p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/80 transition shrink-0"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
 
           {/* Show Equipped Skills Chips Only (keeps prompt composer clean) */}
           {equippedSkillObjects.length > 0 && (

@@ -171,7 +171,7 @@ def _read_workspace_meta(ws_path: Path, project_id: str) -> WorkspaceMetaRespons
             raw = json.loads(meta_file.read_text(encoding="utf-8"))
             items = [ChatHistoryItem(**item) for item in raw.get("chat_history", [])]
             saved_skills = list(raw.get("skills", []))
-            default_skills = list(dict.fromkeys(["tokless", "taste-skill", *saved_skills]))
+            default_skills = list(dict.fromkeys(["tokless", *saved_skills]))
             return WorkspaceMetaResponse(
                 project_id=project_id,
                 template=raw.get("template", "nextjs"),
@@ -185,7 +185,7 @@ def _read_workspace_meta(ws_path: Path, project_id: str) -> WorkspaceMetaRespons
         project_id=project_id,
         template="nextjs",
         template_locked=False,
-        skills=["tokless", "taste-skill"],
+        skills=["tokless"],
         chat_history=[],
     )
 
