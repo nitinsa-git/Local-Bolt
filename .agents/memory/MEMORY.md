@@ -3,6 +3,7 @@
 ## 1. Project Identity & Tech Stack
 - **Project Name**: Local Bolt (`local-dev-studio` / VibeForge)
 - **Workspace Root**: `c:/GITs/AGs/Local Bolt`
+- **GitHub Repository**: `https://github.com/nitinsa-git/Local-Bolt.git` (`main` branch)
 - **Production AWS Deployment**:
   - **Public URL**: `https://vibeforge.aitoolsbynv.store` (alias: `https://rigo.aitoolsbynv.store`)
   - **AWS Server**: `ec2-user@18.227.22.24` (`m7i-flex.large`, Amazon Linux 2023, 2 vCPU, 7.6 GiB RAM + 4 GiB NVMe Swap)
