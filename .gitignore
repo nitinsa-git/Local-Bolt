@@ -1,0 +1,25 @@
+# Dependencies & Build Artifacts
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+**/.venv/
+
+# Large Local LLM Models & Binaries
+**/llm_runtime/
+*.gguf
+*.bin
+*.exe
+*.dll
+
+# Workspace Runtime Databases & Backups
+**/.studio_backups/
+**/workspace.db
+**/workspace.db-journal
+**/workspace.db-wal
+**/workspace.db-shm
+local-dev-studio/backend/workspaces/*/.git/

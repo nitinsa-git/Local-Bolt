@@ -1,0 +1,22 @@
+{
+  "project_id": "test-pomodoro",
+  "template": "nextjs",
+  "template_locked": true,
+  "chat_history": [
+    {
+      "id": "ca8758c3",
+      "project_id": "test-pomodoro",
+      "prompt": "Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards",
+      "template": "nextjs",
+      "status": "completed",
+      "iterations": 1,
+      "files_changed": [
+        "package.json",
+        "app/page.tsx",
+        "index.html",
+        "server.js"
+      ],
+      "timestamp": "2026-10-15T03:35:27.710272+00:00"
+    }
+  ]
+}

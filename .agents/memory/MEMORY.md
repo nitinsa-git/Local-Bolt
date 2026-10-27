@@ -1,0 +1,54 @@
+# Project Memory: Local Bolt (VibeForge / Local Dev Studio)
+
+## 1. Project Identity & Tech Stack
+- **Project Name**: Local Bolt (`local-dev-studio` / VibeForge)
+- **Workspace Root**: `c:/GITs/AGs/Local Bolt`
+- **Production AWS Deployment**:
+  - **Public URL**: `https://vibeforge.aitoolsbynv.store` (alias: `https://rigo.aitoolsbynv.store`)
+  - **AWS Server**: `ec2-user@18.227.22.24` (`m7i-flex.large`, Amazon Linux 2023, 2 vCPU, 7.6 GiB RAM + 4 GiB NVMe Swap)
+  - **Remote Path**: `/home/ec2-user/Local-Bolt`
+  - **PM2 Services**: `vibeforge-frontend` (`:3700`) and `vibeforge-backend` (`:8700`)
+  - **Reverse Proxy**: Docker `antigravity_nginx` (`/home/ec2-user/antigravity/nginx.conf` + `/home/ec2-user/antigravity/ssl/vibeforge_fullchain.pem`)
+  - **Active LLM Runtime on AWS**: Ollama (`http://127.0.0.1:11434`) with `qwen2.5-coder:7b`, `qwen2.5-coder:3b`, and `qwen3.5:2b`
+- **Registered Exclusive App Ports** (see [`local-dev-studio/app-ports.json`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/app-ports.json)):
+  - **Frontend UI (Next.js 15)**: `:3700`
+  - **Backend API & WebSocket (FastAPI)**: `:8700`
+  - **Local LLM Runtime (`llama-server.exe` on Windows)**: `:8780`
+  - **Sandbox Preview Ports**: `:3710+`
+
+## 2. Run & Verification Commands
+- **Local Dev (`:8780`, `:8700`, `:3700`)**:
+  - LLM: `cd local-dev-studio/backend && .\llm_runtime\bin\llama-server.exe -m .\llm_runtime\models\qwen2.5-coder-7b-instruct-q4_k_m.gguf --host 127.0.0.1 --port 8780 -c 8192 -np 1 -t 8 -b 1024 -ub 512 --log-disable`
+  - Backend: `cd local-dev-studio/backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8700`
+  - Frontend: `cd local-dev-studio/frontend && npm run build && npm run dev`
+- **Remote AWS Health Checks**:
+  - `curl -s https://vibeforge.aitoolsbynv.store/health`
+  - `curl -s https://vibeforge.aitoolsbynv.store/api/llm/status`
+
+## 3. Core Domain Rules & Invariants
+- **Universal AI Application Base Platform**:
+  - Every workspace has an isolated SQLite database (`<workspace>/workspace.db`), a built-in RAG Document & Chunk Vector Engine (`rag_documents`, `rag_chunks`), a NoSQL collection store (`app_collections`), an in-app LLM inference router (`run_in_app_ai_chat`), and an Agentic Tool-Calling / MCP Bridge (`execute_tool`).
+  - Every generated preview (`/api/projects/{project_id}/preview`) and standalone published app (`/apps/{project_id}`) is automatically injected with `window.VibeForgeSDK` (`window.VF`) without any intrusive overlay banner on the app screen; the compact **⚡ AI • RAG • SQLite • MCP** informative icon lives in the top Preview Toolbar (`preview-viewport.tsx`).
+  - **Workspace-Level `.env` Model & Sandbox Governance**: Model/provider routing (`AI_PROVIDER`, `LOCAL_LLM_MODEL`, `OLLAMA_HOST`, `OPENAI_API_KEY`) and sandbox isolation (`SANDBOX_MODE=hybrid_isolated` default, or `SANDBOX_MODE=docker`) are configured strictly per workspace inside the Container Governance Drawer `.env` editor.
+- **Tokless & TasteSkill V2 Default**: `tokless` and `taste-skill` (`design-taste-frontend`) are equipped by default across all workspaces (`["tokless", "taste-skill"]`). `CodingAgent._infer_taste_skill_profile` computes Section 0 Brief Inference and Section 1 3-Dial Configuration (`DESIGN_VARIANCE`, `MOTION_INTENSITY`, `VISUAL_DENSITY` on a `1–10` scale), and `_repair_and_enrich_html` injects `<style id="vibeforge-tasteskill-engine">` + `window.VibeForgeTaste` (`setDials(dv, mi, vd)`, `auditDOM()`, tabular numerals, and live `postMessage` dial tuning from the top Preview Toolbar).
+- Never use generic ports (`3000`, `8000`, `8080`). Always use the registered ports (`3700`, `8700`, `8780`) reserved exclusively for Local Bolt.
+- Frontend automatically resolves `BACKEND_HTTP` and `BACKEND_WS` to `window.location.origin` / `wss://${window.location.host}` when served over a public HTTPS domain (`https://vibeforge.aitoolsbynv.store`) and `http://localhost:8700` on localhost.
+
+## 4. Key File Map
+- [`local-dev-studio/backend/app/agent/ai_app_runtime.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/agent/ai_app_runtime.py): `WorkspaceAIRuntime` (per-workspace `workspace.db` SQLite, RAG chunking & hybrid cosine/exact retrieval, `.env`-routed LLM chat, MCP tool execution).
+- [`local-dev-studio/backend/app/api/files_routes.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/api/files_routes.py): Per-workspace `/ai/chat`, `/rag/ingest`, `/rag/query`, `/db/query`, `/db/collections`, `/tools/exec`, and `render_workspace_preview_html` (`window.VibeForgeSDK` + runtime dock injection).
+- [`.agents/skills/tokless/SKILL.md`](file:///c:/GITs/AGs/Local%20Bolt/.agents/skills/tokless/SKILL.md): Tokless token & context compression skill (`SKILL.md`).
+- [`.agents/skills/taste-skill/SKILL.md`](file:///c:/GITs/AGs/Local%20Bolt/.agents/skills/taste-skill/SKILL.md): TasteSkill V2 (`design-taste-frontend`) anti-slop frontend art direction & 3-Dial (`DESIGN_VARIANCE`, `MOTION_INTENSITY`, `VISUAL_DENSITY`) skill (`SKILL.md`).
+- [`.agents/skills/aws-cloud-architect/SKILL.md`](file:///c:/GITs/AGs/Local%20Bolt/.agents/skills/aws-cloud-architect/SKILL.md): AWS Cloud Architect & Serverless Engineering skill (`SKILL.md`).
+- [`local-dev-studio/backend/app/agent/skills_registry.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/agent/skills_registry.py): Built-in and `SKILL.md` LLM skills catalog (including Tokless and AWS Cloud & Architecture packs).
+- [`local-dev-studio/backend/app/agent/coding_agent.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/agent/coding_agent.py): Autonomous coding agent with `_tokless_compress_source` context pruning and `window.VibeForgeSDK` awareness.
+
+## 5. Recent Decisions & Gotchas
+- `[2026-10-27]` Completed **TasteSkill V2 Studio UI Upgrade**: loaded `Plus Jakarta Sans` (`--font-display`), `Inter` (`--font-sans`), and `JetBrains Mono` (`--font-mono`) in [`layout.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/app/layout.tsx), enforced `tabular-nums` and `1px` specular hairline borders + **Swiss Monochrome** (`taste-monochrome`) theme in [`globals.css`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/app/globals.css), added `⌘K` Command Palette pill and de-duplicated controls in [`page.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/app/page.tsx), added the **TasteSkill V2 Preset Bar** (*Auto V2*, *Minimalist*, *Soft*, *Strict Bento*, *Audit*) + `+ TasteSkill` pack button in [`agent-console.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/components/agent-console.tsx), and added 1-click 3-Dial presets in [`preview-viewport.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/components/preview-viewport.tsx).
+- `[2026-10-27]` Integrated **TasteSkill V2 (`taste-skill` / `design-taste-frontend`)** at both the skill registry level (`taste-skill`, `taste-minimalist-ui`, `taste-soft-luxury`, `taste-gpt-strict`, `taste-redesign-audit` in [`skills_registry.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/agent/skills_registry.py) + `.agents/skills/taste-skill/SKILL.md`) and the deep implementation level (`_infer_taste_skill_profile`, `<style id="vibeforge-tasteskill-engine">`, and `window.VibeForgeTaste` in [`coding_agent.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/agent/coding_agent.py) and [`files_routes.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/api/files_routes.py), `Blueprint.md` / `Prompts.md` generators in [`ai_app_runtime.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/agent/ai_app_runtime.py), and live 3-Dial sliders inside the top toolbar popover in [`preview-viewport.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/components/preview-viewport.tsx)).
+- `[2026-10-27]` Removed the floating bottom-right `#vf-ai-base-dock` banner from [`files_routes.py`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/backend/app/api/files_routes.py) so the preview canvas is never obstructed, and added a compact informative `Zap` icon button (`⚡ AI • RAG • SQLite • MCP`) with hover tooltip and click-to-toggle runtime info popover in the top toolbar of [`preview-viewport.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/components/preview-viewport.tsx) right beside Prompts, Blueprint, and Publish App.
+- `[2026-10-22]` Replaced the text-pill buttons in [`preview-viewport.tsx`](file:///c:/GITs/AGs/Local%20Bolt/local-dev-studio/frontend/components/preview-viewport.tsx) with 3 compact icon buttons and hover tooltips: `MessageSquareCode` (`Download Prompts.md (CoT & Next Steps)`), `Compass` (`Download Blueprint.md (App Architecture Spec)`), and `Rocket` (`Publish App (/apps/{projectId})`).
+- `[2026-10-22]` Updated `WorkspaceAIRuntime.generate_prompts_data` (`<AbbrevAppTitle>-Prompts-v<Version>.md`) to remove *Consolidated One-Shot Prompt* and *Step-by-Step Prompts List*, replacing them with **Section 1: Chain-of-Thought (CoT) Prompting** (4-stage engineering reasoning prompt enriched with the workspace app's extracted datasets, UI controls, and controller functions) and **Section 2: Recommended Next Steps** (CoT expansion prompts).
+- `[2026-10-22]` Streamlined `WorkspaceAIRuntime.generate_blueprint_data` (`<AbbrevAppTitle>-Blueprint-v<Version>.md`) to remove both the *Vibe Coding Prompt Evolution History* and the *AI Runtime, Database Schema (`workspace.db`), RAG Contract & `.env` Config* sections, keeping only the workspace application's clean 6-part specification (Master Build Prompt, Application Overview, UI Architecture & Controls, Controller Functions & Domain Data Entities, Expansion Roadmap, and Prototype Source Code).
+- `[2026-10-22]` Upgraded VibeForge into a Universal AI Application Base Platform (`/grill-me`): added `WorkspaceAIRuntime` (`workspace.db` SQLite + RAG + `.env`-routed AI chat + MCP tools), injected `window.VibeForgeSDK` (`window.VF`) + interactive runtime dock into all previews & standalone `/apps/{project_id}` routes, added 5 AI-Native Starter Blueprints (`rag-copilot`, `agent-workflow`, `sql-analyst`, `voice-vision`, `aws-ai-app`), and enabled Hybrid Sandbox Mode (`SANDBOX_MODE=hybrid_isolated`) by default.
+- `[2026-10-22]` Added `tokless` skill globally (`~/.gemini/skills/tokless/SKILL.md`), in workspace `.agents/skills/tokless/SKILL.md`, and in `skills_registry.py` + `coding_agent.py` (enabled by default for all workspaces locally and on `https://vibeforge.aitoolsbynv.store`).

@@ -1,0 +1,16 @@
+{
+  "app_name": "Local Bolt (VibeForge Local Dev Studio)",
+  "workspace": "c:/GITs/AGs/Local Bolt",
+  "registered_ports": {
+    "frontend_ui": 3700,
+    "backend_api_ws": 8700,
+    "local_llm_server": 8780,
+    "sandbox_preview_base": 3710
+  },
+  "urls": {
+    "frontend": "http://localhost:3700",
+    "backend_http": "http://localhost:8700",
+    "backend_ws": "ws://localhost:8700",
+    "local_llm": "http://127.0.0.1:8780"
+  }
+}

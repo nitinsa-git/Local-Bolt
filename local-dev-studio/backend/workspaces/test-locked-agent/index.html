@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add dark mode and csv export to the latency monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+    }
+    body {
+      background: radial-gradient(circle at top right, #1e1b4b 0%, #020617 60%);
+      color: #f1f5f9;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .shell { max-width: 1120px; margin: 0 auto; padding: 20px 18px 56px; display: flex; flex-direction: column; gap: 18px; }
+    .card {
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 20px 45px -15px rgba(0, 0, 0, 0.6);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 11px; border-radius: 999px; font-size: 11px; font-weight: 700;
+      background: rgba(99, 102, 241, 0.18); color: #a5b4fc; border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 330px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 780px) {
+      .layout-grid { grid-template-columns: 1fr; }
+    }
+    .search-input {
+      width: 100%; padding: 9px 12px; border-radius: 10px;
+      background: #020617; border: 1px solid #1e293b; color: #f8fafc;
+      font-size: 12px; margin-bottom: 10px; outline: none;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .type-scroll {
+      max-height: 520px; overflow-y: auto; padding-right: 4px;
+    }
+    .type-btn {
+      width: 100%; text-align: left; cursor: pointer;
+      padding: 12px 13px; border-radius: 14px;
+      background: rgba(2, 6, 23, 0.65); border: 1px solid #1e293b;
+      color: #e2e8f0; transition: all 0.18s ease; margin-bottom: 8px;
+    }
+    .type-btn:hover { border-color: var(--accent); background: rgba(30, 27, 75, 0.45); }
+    .type-btn.active {
+      background: linear-gradient(135deg, rgba(79, 70, 229, 0.28), rgba(15, 23, 42, 0.95));
+      border-color: var(--accent-light);
+      box-shadow: 0 8px 25px -6px rgba(79, 70, 229, 0.45);
+    }
+    .stage-box {
+      height: 240px; border-radius: 16px;
+      background: radial-gradient(circle at center, rgba(49, 46, 129, 0.45), #020617 85%);
+      border: 1px solid #1e293b;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden; margin: 14px 0;
+    }
+    .btn {
+      cursor: pointer; border: none; border-radius: 10px; padding: 8px 14px;
+      font-size: 12px; font-weight: 600; transition: all 0.15s ease;
+    }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { opacity: 0.92; }
+    .btn-ghost { background: #0f172a; color: #94a3b8; border: 1px solid #1e293b; }
+    .btn-ghost.active, .btn-ghost:hover { background: #1e293b; color: #ffffff; border-color: var(--accent); }
+    pre {
+      background: #020617; border: 1px solid #1e293b; border-radius: 12px;
+      padding: 16px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px; color: #c7d2fe; line-height: 1.55;
+    }
+    /* Live HTML5 Animation Keyframes */
+    @keyframes float3d {
+      0% { transform: perspective(700px) rotateX(-8deg) rotateY(-14deg) translateY(6px); }
+      100% { transform: perspective(700px) rotateX(10deg) rotateY(14deg) translateY(-10px); }
+    }
+    @keyframes elasticPulse {
+      0% { transform: scale(0.84); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      50% { transform: scale(1.08); box-shadow: 0 0 0 22px rgba(99, 102, 241, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+    @keyframes svgStroke {
+      0% { stroke-dashoffset: 280; transform: rotate(0deg); }
+      100% { stroke-dashoffset: 0; transform: rotate(360deg); }
+    }
+    @keyframes staggerWave {
+      0% { transform: translateY(16px) scale(0.92); opacity: 0.35; }
+      100% { transform: translateY(-6px) scale(1.03); opacity: 1; }
+    }
+    @keyframes blobMorph {
+      0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg) scale(0.96); }
+      50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: rotate(180deg) scale(1.08); }
+    }
+    @keyframes glitchAnim {
+      0% { transform: translate(0); text-shadow: -3px 0 #ec4899, 3px 0 #06b6d4; }
+      25% { transform: translate(-3px, 2px) skewX(4deg); text-shadow: 3px 0 #ec4899, -3px 0 #22d3ee; }
+      50% { transform: translate(3px, -2px) skewX(-3deg); text-shadow: -2px -2px #f43f5e, 2px 2px #34d399; }
+      100% { transform: translate(0); text-shadow: -3px 0 #ec4899, 3px 0 #06b6d4; }
+    }
+    @keyframes flip3D {
+      0% { transform: perspective(700px) rotateY(0deg); }
+      50% { transform: perspective(700px) rotateY(180deg); }
+      100% { transform: perspective(700px) rotateY(360deg); }
+    }
+    @keyframes eqBar {
+      0% { transform: scaleY(0.18); }
+      100% { transform: scaleY(1); }
+    }
+    @keyframes shimmerSweep {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes radarSweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .demo-3d-card {
+      width: 240px; padding: 22px; border-radius: 18px; text-align: center;
+      background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(16,185,129,0.18));
+      border: 1px solid rgba(165,180,252,0.5);
+      box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.5);
+      animation: float3d calc(2.4s / var(--speed, 1)) ease-in-out infinite alternate;
+    }
+    .demo-elastic-pill {
+      padding: 16px 28px; border-radius: 999px; font-weight: 800; font-size: 15px;
+      background: linear-gradient(90deg, #4f46e5, #ec4899); color: white;
+      animation: elasticPulse calc(1.8s / var(--speed, 1)) cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+    }
+    .demo-stagger-row { display: flex; gap: 12px; }
+    .demo-stagger-cell {
+      width: 64px; height: 80px; border-radius: 14px;
+      background: rgba(99, 102, 241, 0.25); border: 1px solid #6366f1;
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+      animation: staggerWave calc(1.2s / var(--speed, 1)) ease-in-out infinite alternate;
+    }
+    .demo-liquid-blob {
+      width: 135px; height: 135px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; color: white;
+      background: linear-gradient(135deg, #6366f1, #ec4899, #10b981);
+      box-shadow: 0 0 40px rgba(236, 72, 153, 0.45);
+      animation: blobMorph calc(3.6s / var(--speed, 1)) ease-in-out infinite;
+    }
+    .demo-glitch {
+      font-size: 26px; font-weight: 900; letter-spacing: 0.12em; font-family: monospace;
+      color: #f8fafc;
+      animation: glitchAnim calc(0.9s / var(--speed, 1)) steps(3) infinite;
+    }
+    .demo-flip-card {
+      width: 210px; height: 125px; border-radius: 16px;
+      background: linear-gradient(135deg, #312e81, #0f172a);
+      border: 2px solid #818cf8; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      animation: flip3D calc(3.8s / var(--speed, 1)) ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- Top Portal Header -->
+    <header class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <div>
+        <span class="badge">HTML5 UI/UX INTERACTIVE PORTAL &bull; CONTEXT: APP/PAGE.TSX, INDEX.HTML, PACKAGE.JSON, SERVER.JS</span>
+        <h1 style="font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-0.02em;">Add dark mode and csv export to the latency monitor</h1>
+        <p style="font-size:12.5px;color:#94a3b8;margin-top:2px;">Build an interactive API latency monitor dashboard</p>
+        <div style="margin-top:8px;display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:10px;background:rgba(16,185,129,0.14);border:1px solid rgba(16,185,129,0.35);font-size:11.5px;color:#6ee7b7;">
+          <span>✓ Applied Project Update (#2):</span>
+          <strong style="color:#ecfdf5;">Add dark mode and CSV export to the latency monitor</strong>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:#94a3b8;">Playback Speed:</span>
+        <button class="btn btn-ghost" onclick="setSpeed(0.5, this)">0.5x</button>
+        <button class="btn btn-ghost active" onclick="setSpeed(1, this)">1x</button>
+        <button class="btn btn-ghost" onclick="setSpeed(2, this)">2x</button>
+      </div>
+    </header>
+
+    <!-- Main Interactive Split View: Animation Type Selector + Live Stage & Sample Code -->
+    <div class="layout-grid">
+      <!-- Left Column: Selectable Animation / Component Types -->
+      <aside class="card" style="padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 8px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">
+            Select Animation / UI Type (<span id="count-label">0</span>)
+          </div>
+        </div>
+        <input
+          id="filter-input"
+          type="text"
+          class="search-input"
+          placeholder="Search animation or category..."
+          oninput="filterTypes(this.value)"
+        />
+        <div id="type-list" class="type-scroll"></div>
+      </aside>
+
+      <!-- Right Column: Live Interactive Stage + Tabbed Sample Code Inspector -->
+      <section style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Live HTML5 Animation Preview Stage -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <span id="active-category" class="badge">HTML5 / CSS3</span>
+              <h2 id="active-title" style="font-size:18px;font-weight:800;margin-top:6px;"></h2>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="active-fps" style="font-size:11px;font-family:monospace;color:#34d399;background:rgba(16,185,129,0.14);padding:4px 10px;border-radius:8px;border:1px solid rgba(16,185,129,0.3);"></span>
+              <button class="btn btn-primary" onclick="replayAnimation()">Replay Animation</button>
+            </div>
+          </div>
+          <p id="active-desc" style="font-size:12.5px;color:#94a3b8;margin-top:6px;"></p>
+
+          <div id="live-stage" class="stage-box"></div>
+        </div>
+
+        <!-- Sample Code Inspector for Selected Type -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <div style="display:flex;gap:6px;">
+              <button id="tab-html" class="btn btn-ghost active" onclick="switchCodeTab('html')">HTML5 Markup</button>
+              <button id="tab-css" class="btn btn-ghost" onclick="switchCodeTab('css')">CSS3 Keyframes</button>
+              <button id="tab-js" class="btn btn-ghost" onclick="switchCodeTab('js')">JS Web Animations API</button>
+            </div>
+            <button id="copy-btn" class="btn btn-primary" onclick="copySampleCode()">Copy Sample Code</button>
+          </div>
+          <pre><code id="code-display"></code></pre>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const CATALOG = [
+  {
+    "id": "mod-1",
+    "name": "Dark Interactive Module",
+    "category": "Module 01",
+    "fps": "Live State",
+    "description": "Context-generated interactive view for 'Dark' derived from prompt: Add dark mode and CSV export to the latency monitor",
+    "animationClass": "anim-tilt",
+    "htmlCode": "<section class=\"module-dark\">\n  <h2>Dark Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-dark {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Dark\nexport function initDark(state) {\n  console.log('Initialized Dark:', state);\n}"
+  },
+  {
+    "id": "mod-2",
+    "name": "Mode Interactive Module",
+    "category": "Module 02",
+    "fps": "Live State",
+    "description": "Context-generated interactive view for 'Mode' derived from prompt: Add dark mode and CSV export to the latency monitor",
+    "animationClass": "anim-tilt",
+    "htmlCode": "<section class=\"module-mode\">\n  <h2>Mode Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-mode {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Mode\nexport function initMode(state) {\n  console.log('Initialized Mode:', state);\n}"
+  },
+  {
+    "id": "mod-3",
+    "name": "Export Interactive Module",
+    "category": "Module 03",
+    "fps": "Live State",
+    "description": "Context-generated interactive view for 'Export' derived from prompt: Add dark mode and CSV export to the latency monitor",
+    "animationClass": "anim-tilt",
+    "htmlCode": "<section class=\"module-export\">\n  <h2>Export Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-export {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Export\nexport function initExport(state) {\n  console.log('Initialized Export:', state);\n}"
+  },
+  {
+    "id": "mod-4",
+    "name": "Latency Interactive Module",
+    "category": "Module 04",
+    "fps": "Live State",
+    "description": "Context-generated interactive view for 'Latency' derived from prompt: Add dark mode and CSV export to the latency monitor",
+    "animationClass": "anim-tilt",
+    "htmlCode": "<section class=\"module-latency\">\n  <h2>Latency Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-latency {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Latency\nexport function initLatency(state) {\n  console.log('Initialized Latency:', state);\n}"
+  }
+];
+    let selectedIndex = 0;
+    let currentTab = 'html';
+    let playbackSpeed = 1;
+    let searchFilter = '';
+    let particleReqId = null;
+
+    function filterTypes(val) {
+      searchFilter = (val || '').toLowerCase();
+      renderTypeList();
+    }
+
+    function renderTypeList() {
+      const visible = CATALOG.map((item, idx) => ({ item, idx })).filter(({ item }) =>
+        !searchFilter ||
+        item.name.toLowerCase().includes(searchFilter) ||
+        item.category.toLowerCase().includes(searchFilter) ||
+        item.description.toLowerCase().includes(searchFilter)
+      );
+      document.getElementById('count-label').textContent = visible.length + (searchFilter ? ' / ' + CATALOG.length : '');
+      const container = document.getElementById('type-list');
+      container.innerHTML = visible.map(({ item, idx }) => `
+        <button class="type-btn ${idx === selectedIndex ? 'active' : ''}" onclick="selectType(${idx})">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:700;color:#818cf8;text-transform:uppercase;">#${idx + 1} &bull; ${item.category}</span>
+          </div>
+          <div style="font-size:13.5px;font-weight:700;margin-top:2px;color:#f8fafc;">${item.name}</div>
+          <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">${item.description.slice(0, 68)}...</div>
+        </button>
+      `).join('');
+    }
+
+    function renderStage(item) {
+      if (particleReqId) {
+        cancelAnimationFrame(particleReqId);
+        particleReqId = null;
+      }
+      const stage = document.getElementById('live-stage');
+      stage.style.setProperty('--speed', playbackSpeed);
+      const st = item.stageType || item.id;
+
+      if (st === '3d-card' || item.id === 'morph-card') {
+        stage.innerHTML = `
+          <div class="demo-3d-card">
+            <div style="font-size:11px;font-weight:700;color:#a5b4fc;letter-spacing:0.08em;">HTML5 3D TRANSFORM</div>
+            <div style="font-size:17px;font-weight:800;margin-top:6px;">${item.name}</div>
+            <div style="font-size:11.5px;color:#cbd5e1;margin-top:4px;">60fps GPU preserve-3d motion</div>
+          </div>`;
+      } else if (st === 'elastic' || item.id === 'elastic-pulse') {
+        stage.innerHTML = `<div class="demo-elastic-pill">✦ ${item.name}</div>`;
+      } else if (st === 'svg-morph' || item.id === 'svg-path-morph') {
+        stage.innerHTML = `
+          <svg width="130" height="130" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="44" stroke="#6366f1" stroke-width="6" fill="none"
+              stroke-dasharray="280" style="animation: svgStroke calc(2.4s / var(--speed, 1)) ease-in-out infinite alternate; transform-origin: center;" />
+            <path d="M40 62 L54 76 L82 46" stroke="#34d399" stroke-width="6" stroke-linecap="round" fill="none" />
+          </svg>`;
+      } else if (st === 'canvas-particles' || item.id === 'canvas-particles') {
+        stage.innerHTML = `<canvas id="stage-canvas" width="520" height="220" style="width:100%;height:100%;"></canvas>`;
+        initCanvasParticles();
+      } else if (st === 'liquid-blob') {
+        stage.innerHTML = `<div class="demo-liquid-blob">FLUID MORPH</div>`;
+      } else if (st === 'neon-glitch') {
+        stage.innerHTML = `<div class="demo-glitch">CYBER_GLITCH_FX</div>`;
+      } else if (st === 'flip-card') {
+        stage.innerHTML = `
+          <div class="demo-flip-card">
+            <div style="font-size:10px;color:#a5b4fc;font-weight:700;">ISOMETRIC 3D FLIP</div>
+            <div style="font-size:15px;font-weight:800;margin-top:4px;">180&deg; Axis Rotation</div>
+          </div>`;
+      } else if (st === 'equalizer') {
+        stage.innerHTML = `
+          <div style="display:flex;align-items:flex-end;gap:8px;height:110px;">
+            ${[0.1, 0.35, 0.2, 0.5, 0.15, 0.4, 0.25, 0.45, 0.12, 0.3].map(d =>
+              `<span style="width:12px;height:100px;border-radius:6px;background:linear-gradient(to top,#4f46e5,#34d399);transform-origin:bottom;animation:eqBar calc(0.75s / var(--speed,1)) ease-in-out infinite alternate;animation-delay:${d}s;"></span>`
+            ).join('')}
+          </div>`;
+      } else if (st === 'shimmer') {
+        stage.innerHTML = `
+          <div style="width:280px;padding:16px;border-radius:14px;background:#0f172a;border:1px solid #1e293b;display:flex;flex-direction:column;gap:10px;">
+            <div style="height:16px;width:65%;border-radius:6px;background:linear-gradient(90deg,#1e293b 25%,#4f46e5 50%,#1e293b 75%);background-size:200% 100%;animation:shimmerSweep calc(1.5s / var(--speed,1)) infinite linear;"></div>
+            <div style="height:12px;width:90%;border-radius:6px;background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmerSweep calc(1.5s / var(--speed,1)) infinite linear;"></div>
+            <div style="height:12px;width:75%;border-radius:6px;background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmerSweep calc(1.5s / var(--speed,1)) infinite linear;"></div>
+          </div>`;
+      } else if (st === 'typewriter') {
+        stage.innerHTML = `
+          <div style="font-family:monospace;font-size:14px;color:#34d399;background:#020617;padding:14px 20px;border-radius:12px;border:1px solid #1e293b;">
+            &gt; executing html5_motion_pipeline... <span style="display:inline-block;width:8px;height:15px;background:#34d399;animation:eqBar 0.6s infinite alternate;"></span>
+          </div>`;
+      } else if (st === 'orbit') {
+        stage.innerHTML = `
+          <div style="position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;inset:0;border:2px solid #6366f1;border-radius:50%;animation:flip3D calc(2.2s / var(--speed,1)) linear infinite;"></div>
+            <div style="position:absolute;inset:14px;border:2px solid #34d399;border-radius:50%;animation:radarSweep calc(1.8s / var(--speed,1)) linear infinite;"></div>
+            <div style="width:18px;height:18px;border-radius:50%;background:#a5b4fc;box-shadow:0 0 20px #6366f1;"></div>
+          </div>`;
+      } else if (st === 'dock') {
+        stage.innerHTML = `
+          <div style="display:flex;gap:12px;padding:12px 18px;border-radius:18px;background:rgba(15,23,42,0.9);border:1px solid #334155;">
+            ${['⚡','🎨','🚀','💎','🔥'].map((ic, i) =>
+              `<div class="demo-stagger-cell" style="width:48px;height:48px;font-size:20px;animation-delay:${i*120}ms;">${ic}</div>`
+            ).join('')}
+          </div>`;
+      } else if (st === 'radar') {
+        stage.innerHTML = `
+          <div style="position:relative;width:136px;height:136px;border-radius:50%;border:2px solid rgba(52,211,153,0.45);overflow:hidden;background:radial-gradient(circle,rgba(16,185,129,0.12),#020617);">
+            <div style="position:absolute;inset:0;background:conic-gradient(from 0deg,transparent 70%,rgba(52,211,153,0.55));animation:radarSweep calc(2s / var(--speed,1)) linear infinite;"></div>
+          </div>`;
+      } else {
+        stage.innerHTML = `
+          <div class="demo-stagger-row">
+            <div class="demo-stagger-cell" style="animation-delay:0ms;">01</div>
+            <div class="demo-stagger-cell" style="animation-delay:160ms;">02</div>
+            <div class="demo-stagger-cell" style="animation-delay:320ms;">03</div>
+            <div class="demo-stagger-cell" style="animation-delay:480ms;">04</div>
+          </div>`;
+      }
+    }
+
+    function initCanvasParticles() {
+      const canvas = document.getElementById('stage-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const pts = Array.from({ length: 24 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 1.8 * playbackSpeed,
+        vy: (Math.random() - 0.5) * 1.8 * playbackSpeed,
+        r: 2.5 + Math.random() * 2
+      }));
+      function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+          if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = '#818cf8';
+          ctx.fill();
+          for (let j = i + 1; j < pts.length; j++) {
+            const q = pts[j];
+            const dist = Math.hypot(p.x - q.x, p.y - q.y);
+            if (dist < 95) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(q.x, q.y);
+              ctx.strokeStyle = `rgba(99, 102, 241, ${1 - dist / 95})`;
+              ctx.stroke();
+            }
+          }
+        }
+        particleReqId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    function updateCodeView() {
+      const item = CATALOG[selectedIndex];
+      const code = currentTab === 'html' ? item.htmlCode : currentTab === 'css' ? item.cssCode : item.jsCode;
+      document.getElementById('code-display').textContent = code;
+      ['html', 'css', 'js'].forEach(t => {
+        document.getElementById('tab-' + t).className = 'btn btn-ghost' + (t === currentTab ? ' active' : '');
+      });
+    }
+
+    function selectType(idx) {
+      selectedIndex = idx;
+      const item = CATALOG[selectedIndex];
+      document.getElementById('active-category').textContent = item.category;
+      document.getElementById('active-title').textContent = item.name;
+      document.getElementById('active-fps').textContent = item.fps;
+      document.getElementById('active-desc').textContent = item.description;
+      renderTypeList();
+      renderStage(item);
+      updateCodeView();
+      console.log('[AnimationPortal] Selected type:', item.name);
+    }
+
+    function switchCodeTab(tab) {
+      currentTab = tab;
+      updateCodeView();
+    }
+
+    function setSpeed(s, btn) {
+      playbackSpeed = s;
+      document.querySelectorAll('header .btn-ghost').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderStage(CATALOG[selectedIndex]);
+    }
+
+    function replayAnimation() {
+      renderStage(CATALOG[selectedIndex]);
+    }
+
+    function copySampleCode() {
+      const code = document.getElementById('code-display').textContent;
+      navigator.clipboard?.writeText(code);
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✓ Copied to Clipboard!';
+      setTimeout(() => { btn.textContent = 'Copy Sample Code'; }, 1500);
+    }
+
+    selectType(0);
+  </script>
+</body>
+</html>

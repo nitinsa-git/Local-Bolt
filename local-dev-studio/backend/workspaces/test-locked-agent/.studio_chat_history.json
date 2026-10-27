@@ -1,0 +1,40 @@
+{
+  "project_id": "test-locked-agent",
+  "template": "nextjs",
+  "template_locked": true,
+  "skills": [],
+  "chat_history": [
+    {
+      "id": "8d27ea56",
+      "project_id": "test-locked-agent",
+      "prompt": "Add dark mode and CSV export to the latency monitor",
+      "template": "nextjs",
+      "skills": [],
+      "status": "completed",
+      "iterations": 1,
+      "files_changed": [
+        "package.json",
+        "app/page.tsx",
+        "index.html",
+        "server.js"
+      ],
+      "timestamp": "2026-10-15T17:25:11.434070+00:00"
+    },
+    {
+      "id": "8f7412c9",
+      "project_id": "test-locked-agent",
+      "prompt": "Build an interactive API latency monitor dashboard",
+      "template": "nextjs",
+      "skills": [],
+      "status": "completed",
+      "iterations": 1,
+      "files_changed": [
+        "package.json",
+        "app/page.tsx",
+        "index.html",
+        "server.js"
+      ],
+      "timestamp": "2026-10-15T17:25:02.142680+00:00"
+    }
+  ]
+}

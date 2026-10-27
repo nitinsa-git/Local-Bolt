@@ -1,0 +1,8 @@
+node_modules/
+.next/
+__pycache__/
+*.pyc
+.venv/
+backend/llm_runtime/
+workspaces/*/.studio_backups/
+workspaces/*/node_modules/

@@ -1,0 +1,24 @@
+{
+  "project_id": "consoletest",
+  "template": "nextjs",
+  "template_locked": true,
+  "skills": [],
+  "chat_history": [
+    {
+      "id": "e030ce84",
+      "project_id": "consoletest",
+      "prompt": "build 2 console based application and let the applications communicate via message broker",
+      "template": "nextjs",
+      "skills": [],
+      "status": "completed",
+      "iterations": 1,
+      "files_changed": [
+        "package.json",
+        "app/page.tsx",
+        "index.html",
+        "server.js"
+      ],
+      "timestamp": "2026-10-16T22:06:21.654971+00:00"
+    }
+  ]
+}

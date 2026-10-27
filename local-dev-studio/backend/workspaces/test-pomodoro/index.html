@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Apply 21.dev bento spotlight interactive template with ui-ux-pro-max</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --pro-border: rgba(255, 255, 255, 0.09);
+      --pro-surface: rgba(15, 23, 42, 0.72);
+    }
+    body {
+      background-color: #020617;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -15%, rgba(99, 102, 241, 0.24), transparent),
+        radial-gradient(ellipse 55% 45% at 88% 12%, rgba(16, 185, 129, 0.12), transparent),
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+      color: #f8fafc;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .shell { max-width: 1180px; margin: 0 auto; padding: 20px 18px 56px; display: flex; flex-direction: column; gap: 18px; }
+    /* 21.dev Spotlight Glass Card (UI/UX Pro Max) */
+    .card {
+      position: relative;
+      background: radial-gradient(
+        480px circle at var(--mouse-x, 50%) var(--mouse-y, 0%),
+        rgba(99, 102, 241, 0.13),
+        rgba(15, 23, 42, 0.78) 65%
+      );
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--pro-border);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 24px 48px -18px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover {
+      border-color: rgba(129, 140, 248, 0.32);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 11px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.03em;
+      background: rgba(99, 102, 241, 0.16); color: #c7d2fe; border: 1px solid rgba(129, 140, 248, 0.34);
+    }
+    .badge-emerald {
+      background: rgba(16, 185, 129, 0.14); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.34);
+    }
+    .badge-cyan {
+      background: rgba(6, 182, 212, 0.14); color: #67e8f9; border-color: rgba(34, 211, 238, 0.34);
+    }
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    @media (max-width: 820px) {
+      .layout-grid { grid-template-columns: 1fr; }
+    }
+    .search-input {
+      width: 100%; padding: 10px 13px; border-radius: 12px;
+      background: rgba(2, 6, 23, 0.85); border: 1px solid var(--pro-border); color: #f8fafc;
+      font-size: 12px; margin-bottom: 10px; outline: none; transition: border-color 0.18s ease;
+    }
+    .search-input:focus { border-color: var(--accent-light); box-shadow: 0 0 0 3px rgba(99,102,241,0.18); }
+    .type-scroll {
+      max-height: 540px; overflow-y: auto; padding-right: 4px;
+    }
+    .type-btn {
+      width: 100%; text-align: left; cursor: pointer;
+      padding: 12px 14px; border-radius: 14px;
+      background: rgba(2, 6, 23, 0.55); border: 1px solid var(--pro-border);
+      color: #e2e8f0; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1); margin-bottom: 8px;
+    }
+    .type-btn:hover {
+      border-color: rgba(129, 140, 248, 0.45);
+      background: rgba(30, 27, 75, 0.45);
+      transform: translateX(3px);
+    }
+    .type-btn.active {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.26), rgba(15, 23, 42, 0.92));
+      border-color: var(--accent-light);
+      box-shadow: 0 10px 26px -8px rgba(99, 102, 241, 0.45);
+    }
+    .stage-box {
+      height: 256px; border-radius: 16px;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(79, 70, 229, 0.32), rgba(2, 6, 23, 0.94) 80%),
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 24px 24px, 24px 24px;
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden; margin: 14px 0 10px;
+    }
+    /* 21.dev Floating Dock inside Stage */
+    .floating-dock {
+      position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px; border-radius: 999px;
+      background: rgba(2, 6, 23, 0.78); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+      z-index: 5;
+    }
+    .dock-item {
+      cursor: pointer; border: none; background: rgba(30, 41, 59, 0.65);
+      color: #cbd5e1; font-size: 10.5px; font-weight: 600;
+      padding: 4px 10px; border-radius: 999px;
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .dock-item:hover {
+      transform: translateY(-3px) scale(1.07);
+      background: var(--accent); color: white;
+    }
+    .bento-showcase {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    @media (max-width: 720px) {
+      .bento-showcase { grid-template-columns: 1fr; }
+    }
+    .bento-tile {
+      padding: 14px; border-radius: 16px;
+      background: rgba(2, 6, 23, 0.6);
+      border: 1px solid var(--pro-border);
+      transition: all 0.22s ease;
+    }
+    .bento-tile:hover {
+      border-color: rgba(129, 140, 248, 0.45);
+      transform: translateY(-2px);
+    }
+    .btn {
+      cursor: pointer; border: none; border-radius: 11px; padding: 7px 13px;
+      font-size: 11.5px; font-weight: 600; transition: all 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      color: white;
+      box-shadow: 0 6px 18px -4px rgba(99, 102, 241, 0.55);
+    }
+    .btn-primary:hover { transform: translateY(-1px) scale(1.02); opacity: 0.96; }
+    .btn-ghost { background: rgba(15, 23, 42, 0.85); color: #94a3b8; border: 1px solid var(--pro-border); }
+    .btn-ghost.active, .btn-ghost:hover { background: rgba(99, 102, 241, 0.22); color: #ffffff; border-color: var(--accent-light); }
+    pre {
+      background: rgba(2, 6, 23, 0.92); border: 1px solid var(--pro-border); border-radius: 14px;
+      padding: 16px; overflow-x: auto; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px; color: #c7d2fe; line-height: 1.55;
+    }
+    /* Live HTML5 Animation Keyframes */
+    @keyframes float3d {
+      0% { transform: perspective(700px) rotateX(-8deg) rotateY(-14deg) translateY(6px); }
+      100% { transform: perspective(700px) rotateX(10deg) rotateY(14deg) translateY(-10px); }
+    }
+    @keyframes elasticPulse {
+      0% { transform: scale(0.84); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      50% { transform: scale(1.08); box-shadow: 0 0 0 22px rgba(99, 102, 241, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+    @keyframes svgStroke {
+      0% { stroke-dashoffset: 280; transform: rotate(0deg); }
+      100% { stroke-dashoffset: 0; transform: rotate(360deg); }
+    }
+    @keyframes staggerWave {
+      0% { transform: translateY(16px) scale(0.92); opacity: 0.35; }
+      100% { transform: translateY(-6px) scale(1.03); opacity: 1; }
+    }
+    @keyframes blobMorph {
+      0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; transform: rotate(0deg) scale(0.96); }
+      50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; transform: rotate(180deg) scale(1.08); }
+    }
+    @keyframes glitchAnim {
+      0% { transform: translate(0); text-shadow: -3px 0 #ec4899, 3px 0 #06b6d4; }
+      25% { transform: translate(-3px, 2px) skewX(4deg); text-shadow: 3px 0 #ec4899, -3px 0 #22d3ee; }
+      50% { transform: translate(3px, -2px) skewX(-3deg); text-shadow: -2px -2px #f43f5e, 2px 2px #34d399; }
+      100% { transform: translate(0); text-shadow: -3px 0 #ec4899, 3px 0 #06b6d4; }
+    }
+    @keyframes flip3D {
+      0% { transform: perspective(700px) rotateY(0deg); }
+      50% { transform: perspective(700px) rotateY(180deg); }
+      100% { transform: perspective(700px) rotateY(360deg); }
+    }
+    @keyframes eqBar {
+      0% { transform: scaleY(0.18); }
+      100% { transform: scaleY(1); }
+    }
+    @keyframes shimmerSweep {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes radarSweep {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .demo-3d-card {
+      width: 240px; padding: 22px; border-radius: 18px; text-align: center;
+      background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(16,185,129,0.18));
+      border: 1px solid rgba(165,180,252,0.5);
+      box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.5);
+      animation: float3d calc(2.4s / var(--speed, 1)) ease-in-out infinite alternate;
+    }
+    .demo-elastic-pill {
+      padding: 16px 28px; border-radius: 999px; font-weight: 800; font-size: 15px;
+      background: linear-gradient(90deg, #4f46e5, #ec4899); color: white;
+      animation: elasticPulse calc(1.8s / var(--speed, 1)) cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+    }
+    .demo-stagger-row { display: flex; gap: 12px; }
+    .demo-stagger-cell {
+      width: 64px; height: 80px; border-radius: 14px;
+      background: rgba(99, 102, 241, 0.25); border: 1px solid #6366f1;
+      display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px;
+      animation: staggerWave calc(1.2s / var(--speed, 1)) ease-in-out infinite alternate;
+    }
+    .demo-liquid-blob {
+      width: 135px; height: 135px; display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; color: white;
+      background: linear-gradient(135deg, #6366f1, #ec4899, #10b981);
+      box-shadow: 0 0 40px rgba(236, 72, 153, 0.45);
+      animation: blobMorph calc(3.6s / var(--speed, 1)) ease-in-out infinite;
+    }
+    .demo-glitch {
+      font-size: 26px; font-weight: 900; letter-spacing: 0.12em; font-family: monospace;
+      color: #f8fafc;
+      animation: glitchAnim calc(0.9s / var(--speed, 1)) steps(3) infinite;
+    }
+    .demo-flip-card {
+      width: 210px; height: 125px; border-radius: 16px;
+      background: linear-gradient(135deg, #312e81, #0f172a);
+      border: 2px solid #818cf8; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      animation: flip3D calc(3.8s / var(--speed, 1)) ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <!-- Top UI/UX Pro Max + 21.dev Header -->
+    <header class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+      <div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+          <span class="badge">✦ 21.DEV INTERACTIVE TEMPLATE &bull; CONTEXT: APP/PAGE.TSX, INDEX.HTML, PACKAGE.JSON, SERVER.JS</span>
+          <span class="badge badge-emerald">UI/UX PRO MAX SKILL</span>
+          <span class="badge badge-cyan">FRAMER MOTION SPRING ENGINE</span>
+        </div>
+        <h1 style="font-size:23px;font-weight:800;margin-top:8px;letter-spacing:-0.025em;background:linear-gradient(90deg,#ffffff,#c7d2fe,#6ee7b7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Apply 21.dev bento spotlight interactive template with ui-ux-pro-max</h1>
+        <p style="font-size:12.5px;color:#94a3b8;margin-top:2px;">Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards</p>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:10.5px;color:#94a3b8;font-weight:600;">21.dev Layout:</span>
+          <button class="btn btn-ghost active" id="tpl-bento" onclick="setTemplateMode('bento', this)">Bento Spotlight</button>
+          <button class="btn btn-ghost" id="tpl-aurora" onclick="setTemplateMode('aurora', this)">Aurora Hero</button>
+          <button class="btn btn-ghost" id="tpl-dock" onclick="setTemplateMode('dock', this)">Floating Dock</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span style="font-size:10.5px;color:#94a3b8;">Speed:</span>
+          <button class="btn btn-ghost speed-btn" onclick="setSpeed(0.5, this)">0.5x</button>
+          <button class="btn btn-ghost speed-btn active" onclick="setSpeed(1, this)">1x</button>
+          <button class="btn btn-ghost speed-btn" onclick="setSpeed(2, this)">2x</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Interactive Split View: 21.dev Component Selector + Live Stage & Sample Code -->
+    <div class="layout-grid">
+      <!-- Left Column: Selectable Animation / Component Types -->
+      <aside class="card" style="padding:15px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 4px 8px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#94a3b8;">
+            21.dev Interactive Catalog (<span id="count-label">0</span>)
+          </div>
+          <span style="font-size:10px;color:#6ee7b7;font-family:monospace;">PRO MAX</span>
+        </div>
+        <input
+          id="filter-input"
+          type="text"
+          class="search-input"
+          placeholder="Filter 21.dev animations or categories..."
+          oninput="filterTypes(this.value)"
+        />
+        <div id="type-list" class="type-scroll"></div>
+      </aside>
+
+      <!-- Right Column: Live Interactive Stage + 21.dev Bento Showcase + Tabbed Code Inspector -->
+      <section style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Live HTML5 + Framer Motion + 21.dev Preview Stage -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="display:flex;gap:6px;align-items:center;">
+                <span id="active-category" class="badge">HTML5 / CSS3</span>
+                <span id="active-tpl-pill" class="badge badge-cyan">21.dev/bento-spotlight</span>
+              </div>
+              <h2 id="active-title" style="font-size:19px;font-weight:800;margin-top:6px;letter-spacing:-0.02em;"></h2>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="active-fps" style="font-size:11px;font-family:monospace;color:#34d399;background:rgba(16,185,129,0.14);padding:4px 10px;border-radius:999px;border:1px solid rgba(16,185,129,0.3);"></span>
+              <button class="btn btn-primary" onclick="replayAnimation()">Replay Motion</button>
+            </div>
+          </div>
+          <p id="active-desc" style="font-size:12.5px;color:#94a3b8;margin-top:6px;"></p>
+
+          <div id="live-stage" class="stage-box" style="cursor:grab;user-select:none;" title="Drag or move pointer to test spring &amp; 3D gesture physics"></div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#a5b4fc;padding:2px 4px 0;">
+            <span>✦ 21.dev Interactive Stage: Drag element or hover to trigger Spotlight &amp; Spring Physics</span>
+            <span id="gesture-readout" style="font-family:monospace;color:#34d399;">x: 0px, y: 0px &bull; scale: 1.00</span>
+          </div>
+        </div>
+
+        <!-- 21.dev Interactive Bento Micro-Components Row (UI/UX Pro Max) -->
+        <div class="bento-showcase">
+          <div class="bento-tile card" style="padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:#818cf8;text-transform:uppercase;">21.dev / Spotlight Card</div>
+            <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-top:3px;">Radial Cursor Glow</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Move cursor across cards to see real-time 21st.dev radial border illumination.</div>
+          </div>
+          <div class="bento-tile card" style="padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:#34d399;text-transform:uppercase;">UI/UX Pro Max Skill</div>
+            <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-top:3px;">Clean Glass Hierarchy</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">1px translucent hairlines, 18px backdrop blur, and high-contrast typography.</div>
+          </div>
+          <div class="bento-tile card" style="padding:14px;">
+            <div style="font-size:10px;font-weight:700;color:#67e8f9;text-transform:uppercase;">Framer Motion Gestures</div>
+            <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-top:3px;">Spring Physics (340/22)</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Elastic drag constraints, 3D tilt hover, and tactile tap feedback throughout.</div>
+          </div>
+        </div>
+
+        <!-- Sample Code Inspector for Selected Type -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button id="tab-21dev" class="btn btn-ghost active" onclick="switchCodeTab('21dev')">21.dev Template</button>
+              <button id="tab-framer" class="btn btn-ghost" onclick="switchCodeTab('framer')">Framer Motion (React)</button>
+              <button id="tab-html" class="btn btn-ghost" onclick="switchCodeTab('html')">HTML5 Markup</button>
+              <button id="tab-css" class="btn btn-ghost" onclick="switchCodeTab('css')">CSS3 Keyframes</button>
+              <button id="tab-js" class="btn btn-ghost" onclick="switchCodeTab('js')">JS Web Animations API</button>
+            </div>
+            <button id="copy-btn" class="btn btn-primary" onclick="copySampleCode()">Copy Sample Code</button>
+          </div>
+          <pre><code id="code-display"></code></pre>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    const CATALOG = [
+  {
+    "id": "mod-1-apply",
+    "name": "Apply Interactive Module",
+    "category": "Module 01",
+    "fps": "Live State",
+    "stageType": "3d-card",
+    "description": "Context-generated interactive view for 'Apply' updated via prompt: Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards",
+    "htmlCode": "<section class=\"module-apply\">\n  <h2>Apply Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-apply {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Apply\nexport function initApply(state) {\n  console.log('Initialized Apply:', state);\n}"
+  },
+  {
+    "id": "mod-2-21.dev",
+    "name": "21.dev Interactive Module",
+    "category": "Module 02",
+    "fps": "Live State",
+    "stageType": "3d-card",
+    "description": "Context-generated interactive view for '21.dev' updated via prompt: Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards",
+    "htmlCode": "<section class=\"module-21.dev\">\n  <h2>21.dev Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-21.dev {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for 21.dev\nexport function init21.dev(state) {\n  console.log('Initialized 21.dev:', state);\n}"
+  },
+  {
+    "id": "mod-3-bento",
+    "name": "Bento Interactive Module",
+    "category": "Module 03",
+    "fps": "Live State",
+    "stageType": "3d-card",
+    "description": "Context-generated interactive view for 'Bento' updated via prompt: Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards",
+    "htmlCode": "<section class=\"module-bento\">\n  <h2>Bento Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-bento {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Bento\nexport function initBento(state) {\n  console.log('Initialized Bento:', state);\n}"
+  },
+  {
+    "id": "mod-4-spotlight",
+    "name": "Spotlight Interactive Module",
+    "category": "Module 04",
+    "fps": "Live State",
+    "stageType": "3d-card",
+    "description": "Context-generated interactive view for 'Spotlight' updated via prompt: Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards",
+    "htmlCode": "<section class=\"module-spotlight\">\n  <h2>Spotlight Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-spotlight {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Spotlight\nexport function initSpotlight(state) {\n  console.log('Initialized Spotlight:', state);\n}"
+  },
+  {
+    "id": "mod-5-interactive",
+    "name": "Interactive Interactive Module",
+    "category": "Module 05",
+    "fps": "Live State",
+    "stageType": "3d-card",
+    "description": "Context-generated interactive view for 'Interactive' updated via prompt: Apply 21.dev Bento Spotlight interactive template with ui-ux-pro-max-skill clean glassmorphic interface and mouse-tracking radial spotlight cards",
+    "htmlCode": "<section class=\"module-interactive\">\n  <h2>Interactive Component</h2>\n  <p>Interactive state ready</p>\n</section>",
+    "cssCode": ".module-interactive {\n  padding: 20px;\n  border-radius: 16px;\n  background: #0f172a;\n  border: 1px solid #334155;\n}",
+    "jsCode": "// Controller for Interactive\nexport function initInteractive(state) {\n  console.log('Initialized Interactive:', state);\n}"
+  }
+];
+    let selectedIndex = 0;
+    let currentTab = '21dev';
+    let currentTemplateMode = 'bento';
+    let playbackSpeed = 1;
+    let searchFilter = '';
+    let particleReqId = null;
+
+    // 21st.dev Mouse-Tracking Radial Spotlight Effect on all .card elements
+    document.addEventListener('pointermove', (e) => {
+      document.querySelectorAll('.card').forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      });
+    });
+
+    function build21DevSnippet(item) {
+      const compName = 'TwentyOneDev' + (item.id || 'Component').replace(/[^a-zA-Z0-9]/g, '');
+      return `// 21st.dev (21.dev/${currentTemplateMode}) Interactive Template + UI/UX Pro Max Skill
+import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+
+export function ${compName}() {
+  const [spot, setSpot] = useState({ x: 180, y: 90 });
+
+  return (
+    <motion.section
+      onPointerMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        setSpot({ x: e.clientX - r.left, y: e.clientY - r.top });
+      }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 360, damping: 28 }}
+      style={{
+        background: "radial-gradient(460px circle at " + spot.x + "px " + spot.y + "px, rgba(99,102,241,0.18), rgba(15,23,42,0.82) 70%)",
+      }}
+      className="relative rounded-2xl border border-white/10 p-6 backdrop-blur-xl shadow-2xl"
+    >
+      <div className="flex items-center justify-between mb-3">
+        <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+          21.dev/${currentTemplateMode} &bull; ${item.category}
+        </span>
+        <span className="text-xs font-mono text-emerald-400">${item.fps}</span>
+      </div>
+      <h3 className="text-lg font-extrabold text-white">${item.name}</h3>
+      <p className="text-xs text-slate-400 mt-1 mb-4">${item.description}</p>
+      <motion.div
+        drag
+        dragConstraints={{ left: -80, right: 80, top: -40, bottom: 40 }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        ${item.htmlCode}
+      </motion.div>
+    </motion.section>
+  );
+}`;
+    }
+
+    function buildFramerSnippet(item) {
+      const compName = (item.id || 'Animation').replace(/[^a-zA-Z0-9]/g, '') + 'Motion';
+      return `import { AnimatePresence, motion } from "framer-motion";
+
+export function ${compName}() {
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="${item.id}"
+        drag
+        dragConstraints={{ left: -90, right: 90, top: -45, bottom: 45 }}
+        dragElastic={0.24}
+        whileHover={{ scale: 1.06, rotateX: 8, rotateY: -8 }}
+        whileTap={{ scale: 0.94 }}
+        initial={{ opacity: 0, y: 18, scale: 0.92 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -12, scale: 0.94 }}
+        transition={{ type: "spring", stiffness: 340, damping: 22 }}
+      >
+        ${item.htmlCode}
+      </motion.div>
+    </AnimatePresence>
+  );
+}`;
+    }
+
+    function setTemplateMode(mode, btn) {
+      currentTemplateMode = mode;
+      ['bento', 'aurora', 'dock'].forEach(m => {
+        const el = document.getElementById('tpl-' + m);
+        if (el) el.className = 'btn btn-ghost' + (m === mode ? ' active' : '');
+      });
+      const pill = document.getElementById('active-tpl-pill');
+      if (pill) pill.textContent = '21.dev/' + (mode === 'bento' ? 'bento-spotlight' : mode === 'aurora' ? 'aurora-hero' : 'floating-dock');
+      renderStage(CATALOG[selectedIndex]);
+      updateCodeView();
+    }
+
+    function filterTypes(val) {
+      searchFilter = (val || '').toLowerCase();
+      renderTypeList();
+    }
+
+    function renderTypeList() {
+      const visible = CATALOG.map((item, idx) => ({ item, idx })).filter(({ item }) =>
+        !searchFilter ||
+        item.name.toLowerCase().includes(searchFilter) ||
+        item.category.toLowerCase().includes(searchFilter) ||
+        item.description.toLowerCase().includes(searchFilter)
+      );
+      document.getElementById('count-label').textContent = visible.length + (searchFilter ? ' / ' + CATALOG.length : '');
+      const container = document.getElementById('type-list');
+      container.innerHTML = visible.map(({ item, idx }) => `
+        <button class="type-btn ${idx === selectedIndex ? 'active' : ''}" onclick="selectType(${idx})">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:10px;font-weight:700;color:#818cf8;text-transform:uppercase;">#${idx + 1} &bull; ${item.category}</span>
+            <span style="font-size:9.5px;font-family:monospace;color:#34d399;">21.dev</span>
+          </div>
+          <div style="font-size:13.5px;font-weight:700;margin-top:2px;color:#f8fafc;">${item.name}</div>
+          <div style="font-size:11.5px;color:#94a3b8;margin-top:3px;">${item.description.slice(0, 68)}...</div>
+        </button>
+      `).join('');
+    }
+
+    function renderStage(item) {
+      if (particleReqId) {
+        cancelAnimationFrame(particleReqId);
+        particleReqId = null;
+      }
+      const stage = document.getElementById('live-stage');
+      stage.style.setProperty('--speed', playbackSpeed);
+      const st = item.stageType || item.id;
+
+      const dockHtml = `
+        <div class="floating-dock">
+          <button class="dock-item" onclick="replayAnimation()">⚡ Replay</button>
+          <button class="dock-item" onclick="switchCodeTab('21dev')">✦ 21.dev Code</button>
+          <button class="dock-item" onclick="switchCodeTab('framer')">🎯 Framer Motion</button>
+          <button class="dock-item" onclick="copySampleCode()">📋 Copy</button>
+        </div>`;
+
+      let inner = '';
+      if (st === '3d-card' || item.id === 'morph-card') {
+        inner = `
+          <div class="demo-3d-card">
+            <div style="font-size:11px;font-weight:700;color:#a5b4fc;letter-spacing:0.08em;">21.DEV 3D SPOTLIGHT</div>
+            <div style="font-size:17px;font-weight:800;margin-top:6px;">${item.name}</div>
+            <div style="font-size:11.5px;color:#cbd5e1;margin-top:4px;">UI/UX Pro Max 60fps Motion</div>
+          </div>`;
+      } else if (st === 'elastic' || item.id === 'elastic-pulse') {
+        inner = `<div class="demo-elastic-pill">✦ ${item.name}</div>`;
+      } else if (st === 'svg-morph' || item.id === 'svg-path-morph') {
+        inner = `
+          <svg width="130" height="130" viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="44" stroke="#6366f1" stroke-width="6" fill="none"
+              stroke-dasharray="280" style="animation: svgStroke calc(2.4s / var(--speed, 1)) ease-in-out infinite alternate; transform-origin: center;" />
+            <path d="M40 62 L54 76 L82 46" stroke="#34d399" stroke-width="6" stroke-linecap="round" fill="none" />
+          </svg>`;
+      } else if (st === 'canvas-particles' || item.id === 'canvas-particles') {
+        stage.innerHTML = `<canvas id="stage-canvas" width="520" height="220" style="width:100%;height:100%;"></canvas>` + dockHtml;
+        initCanvasParticles();
+        return;
+      } else if (st === 'liquid-blob') {
+        inner = `<div class="demo-liquid-blob">FLUID MORPH</div>`;
+      } else if (st === 'neon-glitch') {
+        inner = `<div class="demo-glitch">CYBER_GLITCH_FX</div>`;
+      } else if (st === 'flip-card') {
+        inner = `
+          <div class="demo-flip-card">
+            <div style="font-size:10px;color:#a5b4fc;font-weight:700;">ISOMETRIC 3D FLIP</div>
+            <div style="font-size:15px;font-weight:800;margin-top:4px;">180&deg; Axis Rotation</div>
+          </div>`;
+      } else if (st === 'equalizer') {
+        inner = `
+          <div style="display:flex;align-items:flex-end;gap:8px;height:110px;">
+            ${[0.1, 0.35, 0.2, 0.5, 0.15, 0.4, 0.25, 0.45, 0.12, 0.3].map(d =>
+              `<span style="width:12px;height:100px;border-radius:6px;background:linear-gradient(to top,#4f46e5,#34d399);transform-origin:bottom;animation:eqBar calc(0.75s / var(--speed,1)) ease-in-out infinite alternate;animation-delay:${d}s;"></span>`
+            ).join('')}
+          </div>`;
+      } else if (st === 'shimmer') {
+        inner = `
+          <div style="width:280px;padding:16px;border-radius:14px;background:#0f172a;border:1px solid #1e293b;display:flex;flex-direction:column;gap:10px;">
+            <div style="height:16px;width:65%;border-radius:6px;background:linear-gradient(90deg,#1e293b 25%,#4f46e5 50%,#1e293b 75%);background-size:200% 100%;animation:shimmerSweep calc(1.5s / var(--speed,1)) infinite linear;"></div>
+            <div style="height:12px;width:90%;border-radius:6px;background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmerSweep calc(1.5s / var(--speed,1)) infinite linear;"></div>
+            <div style="height:12px;width:75%;border-radius:6px;background:linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);background-size:200% 100%;animation:shimmerSweep calc(1.5s / var(--speed,1)) infinite linear;"></div>
+          </div>`;
+      } else if (st === 'typewriter') {
+        inner = `
+          <div style="font-family:monospace;font-size:14px;color:#34d399;background:#020617;padding:14px 20px;border-radius:12px;border:1px solid #1e293b;">
+            &gt; executing 21dev_pro_max_pipeline... <span style="display:inline-block;width:8px;height:15px;background:#34d399;animation:eqBar 0.6s infinite alternate;"></span>
+          </div>`;
+      } else if (st === 'orbit') {
+        inner = `
+          <div style="position:relative;width:130px;height:130px;display:flex;align-items:center;justify-content:center;">
+            <div style="position:absolute;inset:0;border:2px solid #6366f1;border-radius:50%;animation:flip3D calc(2.2s / var(--speed,1)) linear infinite;"></div>
+            <div style="position:absolute;inset:14px;border:2px solid #34d399;border-radius:50%;animation:radarSweep calc(1.8s / var(--speed,1)) linear infinite;"></div>
+            <div style="width:18px;height:18px;border-radius:50%;background:#a5b4fc;box-shadow:0 0 20px #6366f1;"></div>
+          </div>`;
+      } else if (st === 'dock') {
+        inner = `
+          <div style="display:flex;gap:12px;padding:12px 18px;border-radius:18px;background:rgba(15,23,42,0.9);border:1px solid #334155;">
+            ${['⚡','🎨','🚀','💎','🔥'].map((ic, i) =>
+              `<div class="demo-stagger-cell" style="width:48px;height:48px;font-size:20px;animation-delay:${i*120}ms;">${ic}</div>`
+            ).join('')}
+          </div>`;
+      } else if (st === 'radar') {
+        inner = `
+          <div style="position:relative;width:136px;height:136px;border-radius:50%;border:2px solid rgba(52,211,153,0.45);overflow:hidden;background:radial-gradient(circle,rgba(16,185,129,0.12),#020617);">
+            <div style="position:absolute;inset:0;background:conic-gradient(from 0deg,transparent 70%,rgba(52,211,153,0.55));animation:radarSweep calc(2s / var(--speed,1)) linear infinite;"></div>
+          </div>`;
+      } else {
+        inner = `
+          <div class="demo-stagger-row">
+            <div class="demo-stagger-cell" style="animation-delay:0ms;">01</div>
+            <div class="demo-stagger-cell" style="animation-delay:160ms;">02</div>
+            <div class="demo-stagger-cell" style="animation-delay:320ms;">03</div>
+            <div class="demo-stagger-cell" style="animation-delay:480ms;">04</div>
+          </div>`;
+      }
+
+      stage.innerHTML = `<div id="gesture-actor" style="transition:transform 0.28s cubic-bezier(0.22, 1.4, 0.36, 1);will-change:transform;margin-bottom:22px;">${inner}</div>` + dockHtml;
+      attachSpringGestures();
+    }
+
+    function attachSpringGestures() {
+      const stage = document.getElementById('live-stage');
+      const actor = document.getElementById('gesture-actor');
+      const readout = document.getElementById('gesture-readout');
+      if (!stage || !actor) return;
+      let dragging = false;
+      let sx = 0, sy = 0;
+
+      stage.onpointerdown = (e) => {
+        if (e.target.closest('.floating-dock')) return;
+        dragging = true;
+        sx = e.clientX;
+        sy = e.clientY;
+        stage.style.cursor = 'grabbing';
+        actor.style.transition = 'none';
+      };
+      window.onpointermove = (e) => {
+        if (!actor) return;
+        if (dragging) {
+          const dx = Math.max(-130, Math.min(130, e.clientX - sx));
+          const dy = Math.max(-65, Math.min(65, e.clientY - sy));
+          actor.style.transform = `translate3d(${dx}px, ${dy}px, 0) scale(1.06)`;
+          if (readout) readout.textContent = `x: ${Math.round(dx)}px, y: ${Math.round(dy)}px • scale: 1.06 (dragging)`;
+        }
+      };
+      window.onpointerup = () => {
+        if (!dragging) return;
+        dragging = false;
+        stage.style.cursor = 'grab';
+        actor.style.transition = 'transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        actor.style.transform = 'translate3d(0px, 0px, 0) scale(1)';
+        if (readout) readout.textContent = 'x: 0px, y: 0px • scale: 1.00 (spring snap)';
+      };
+    }
+
+    function initCanvasParticles() {
+      const canvas = document.getElementById('stage-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const pts = Array.from({ length: 24 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 1.8 * playbackSpeed,
+        vy: (Math.random() - 0.5) * 1.8 * playbackSpeed,
+        r: 2.5 + Math.random() * 2
+      }));
+      function loop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+          if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = '#818cf8';
+          ctx.fill();
+          for (let j = i + 1; j < pts.length; j++) {
+            const q = pts[j];
+            const dist = Math.hypot(p.x - q.x, p.y - q.y);
+            if (dist < 95) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(q.x, q.y);
+              ctx.strokeStyle = `rgba(99, 102, 241, ${1 - dist / 95})`;
+              ctx.stroke();
+            }
+          }
+        }
+        particleReqId = requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    function updateCodeView() {
+      const item = CATALOG[selectedIndex];
+      const code =
+        currentTab === '21dev'
+          ? build21DevSnippet(item)
+          : currentTab === 'framer'
+          ? buildFramerSnippet(item)
+          : currentTab === 'html'
+          ? item.htmlCode
+          : currentTab === 'css'
+          ? item.cssCode
+          : item.jsCode;
+      document.getElementById('code-display').textContent = code;
+      ['21dev', 'framer', 'html', 'css', 'js'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.className = 'btn btn-ghost' + (t === currentTab ? ' active' : '');
+      });
+    }
+
+    function selectType(idx) {
+      selectedIndex = idx;
+      const item = CATALOG[selectedIndex];
+      document.getElementById('active-category').textContent = item.category;
+      document.getElementById('active-title').textContent = item.name;
+      document.getElementById('active-fps').textContent = item.fps;
+      document.getElementById('active-desc').textContent = item.description;
+      renderTypeList();
+      renderStage(item);
+      updateCodeView();
+      console.log('[21.dev + UI/UX Pro Max] Selected type:', item.name);
+    }
+
+    function switchCodeTab(tab) {
+      currentTab = tab;
+      updateCodeView();
+    }
+
+    function setSpeed(s, btn) {
+      playbackSpeed = s;
+      document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderStage(CATALOG[selectedIndex]);
+    }
+
+    function replayAnimation() {
+      renderStage(CATALOG[selectedIndex]);
+    }
+
+    function copySampleCode() {
+      const code = document.getElementById('code-display').textContent;
+      navigator.clipboard?.writeText(code);
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✓ Copied to Clipboard!';
+      setTimeout(() => { btn.textContent = 'Copy Sample Code'; }, 1500);
+    }
+
+    selectType(0);
+  </script>
+</body>
+</html>

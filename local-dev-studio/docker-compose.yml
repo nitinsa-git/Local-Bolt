@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: local-dev-studio-backend
+    ports:
+      - "8700:8700"
+    environment:
+      - WORKSPACES_ROOT=/workspaces
+      - SANDBOX_IMAGE=node:20-alpine
+      - LOCAL_LLM_PORT=8780
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./workspaces:/workspaces
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: local-dev-studio-frontend
+    ports:
+      - "3700:3700"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8700
+      - NEXT_PUBLIC_BACKEND_WS=ws://localhost:8700
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3700"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped

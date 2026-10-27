@@ -1,0 +1,11 @@
+{
+  "name": "autonomous-studio-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node server.js",
+    "build": "node -e \"const fs=require('fs'); if(!fs.existsSync('index.html')) process.exit(1); console.log('Build verified OK');\"",
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}

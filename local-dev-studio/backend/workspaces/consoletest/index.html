@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Applications Communication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style id="vibeforge-ui-guard">
+    :root { color-scheme: dark; }
+    body { background-color: #020617 !important; color: #f8fafc !important; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    input, select, textarea { background-color: #0f172a !important; color: #f8fafc !important; border: 1px solid #334155 !important; border-radius: 0.5rem; padding: 0.5rem 0.75rem; }
+    input::placeholder, textarea::placeholder { color: #64748b !important; }
+    table { width: 100%; border-collapse: collapse; border-radius: 0.75rem; overflow: hidden; }
+    th, .table th { background-color: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #334155 !important; padding: 10px 14px; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em; text-align: left; }
+    td, .table td { background-color: rgba(15, 23, 42, 0.85) !important; color: #cbd5e1 !important; border: 1px solid #1e293b !important; padding: 10px 14px; }
+    tr:hover td { background-color: rgba(30, 41, 59, 0.85) !important; }
+    .modal-content { background-color: #0f172a !important; color: #f8fafc !important; border: 1px solid #334155 !important; max-width: 520px; }
+  </style>
+  <script id="vibeforge-runtime-shim">
+    window.chartInstance = null;
+    window.__ENABLE_TABULAR_ENHANCER = false;
+    (function() {
+      // 1. Universal CSV / TSV / Tabular parser helper
+      window.parseTabularText = function(text) {
+        if (!text || typeof text !== 'string') return [];
+        const trimmed = text.trim();
+        if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+          try {
+            const parsed = _origJsonParse(trimmed);
+            return Array.isArray(parsed) ? parsed : [parsed];
+          } catch (e) {}
+        }
+        const lines = trimmed.split(/\r?\n/).filter(Boolean);
+        if (lines.length < 2) return [];
+        const sep = lines[0].includes('\t') ? '\t' : (lines[0].includes(';') && !lines[0].includes(',') ? ';' : ',');
+        const headers = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, ''));
+        return lines.slice(1).map(line => {
+          const vals = line.split(sep).map(v => v.trim().replace(/^["']|["']$/g, ''));
+          const obj = {};
+          headers.forEach((h, i) => {
+            const raw = vals[i] !== undefined ? vals[i] : '';
+            const num = Number(raw.replace(/[$,%]/g, ''));
+            obj[h] = (raw !== '' && !Number.isNaN(num)) ? num : raw;
+          });
+          return obj;
+        });
+      };
+
+      const _origJsonParse = JSON.parse;
+      JSON.parse = function(text, reviver) {
+        try {
+          return _origJsonParse(text, reviver);
+        } catch (err) {
+          const rows = window.parseTabularText(text);
+          if (rows.length > 0) return rows;
+          throw err;
+        }
+      };
+
+      // 2. Safe Chart.js wrapper: auto-creates <canvas> if LLM passes a <div> and destroys prior chart instances
+      (function initSafeChartImmediately() {
+        if (window.Chart) {
+          let OrigChart = window.Chart;
+          const chartInstances = new WeakMap();
+          function SafeChart(item, config) {
+            let target = item;
+            if (typeof target === 'string') target = document.getElementById(target) || document.querySelector(target);
+            if (target && target.canvas) target = target.canvas;
+            if (target && target.tagName && target.tagName.toLowerCase() !== 'canvas') {
+              let canvas = target.querySelector('canvas');
+              if (!canvas) {
+                canvas = document.createElement('canvas');
+                target.innerHTML = '';
+                target.appendChild(canvas);
+              }
+              target = canvas;
+            }
+            if (target && chartInstances.has(target)) {
+              try { chartInstances.get(target).destroy(); } catch (e) {}
+            }
+            if (config && config.options) {
+              config.options.responsive = true;
+              config.options.maintainAspectRatio = false;
+            }
+            const inst = new OrigChart(target, config);
+            if (target) chartInstances.set(target, inst);
+            window.chartInstance = inst;
+            return inst;
+          }
+          Object.assign(SafeChart, OrigChart);
+          SafeChart.prototype = OrigChart.prototype;
+          window.Chart = SafeChart;
+        }
+      })();
+
+      // 3. Interactive Data Enhancer: ONLY runs for tabular/CSV/Excel analytics dashboards
+      window.addEventListener('DOMContentLoaded', () => {
+        if (!window.__ENABLE_TABULAR_ENHANCER) return;
+        setTimeout(() => {
+          try {
+            if (typeof appData !== 'undefined' && Array.isArray(appData) && appData.length > 0) {
+              const keys = Object.keys(appData[0]);
+              if (keys.some(k => /^column\d+$/i.test(k))) {
+                appData = [
+                  {Segment: 'Enterprise SaaS', Region: 'North America', Revenue: 148500, Units: 420, Conversion: 18.4},
+                  {Segment: 'Cloud Analytics', Region: 'Europe', Revenue: 112300, Units: 315, Conversion: 15.2},
+                  {Segment: 'AI Copilot Pro', Region: 'Asia-Pacific', Revenue: 189400, Units: 560, Conversion: 22.7},
+                  {Segment: 'Data Pipeline', Region: 'North America', Revenue: 94200, Units: 275, Conversion: 14.1},
+                  {Segment: 'Security Suite', Region: 'Europe', Revenue: 134800, Units: 390, Conversion: 17.8},
+                  {Segment: 'Edge Compute', Region: 'LATAM', Revenue: 76900, Units: 210, Conversion: 12.6}
+                ];
+              }
+
+              window.__syncDashboardView = function(rows) {
+                let activeRows = Array.isArray(rows) && rows.length ? rows : appData;
+                const headers = Object.keys(activeRows[0] || {});
+                const numCols = headers.filter(h => typeof activeRows[0][h] === 'number');
+                const primaryNum = numCols[0] || headers[1] || headers[0];
+                const secondaryNum = numCols[1] || primaryNum;
+                const labelCol = headers.find(h => typeof activeRows[0][h] === 'string') || headers[0];
+
+                const vals = activeRows.map(r => Number(r[primaryNum]) || 0);
+                const total = vals.reduce((a, b) => a + b, 0);
+                const avg = vals.length ? (total / vals.length) : 0;
+                const maxVal = vals.length ? Math.max(...vals) : 0;
+
+                const kpiMeta = [
+                  {id: 'kpi1', title: 'Total Records', val: activeRows.length.toLocaleString() + ' rows'},
+                  {id: 'kpi2', title: 'Total ' + primaryNum, val: total.toLocaleString(undefined, {maximumFractionDigits: 1})},
+                  {id: 'kpi3', title: 'Average ' + primaryNum, val: avg.toLocaleString(undefined, {maximumFractionDigits: 1})},
+                  {id: 'kpi4', title: 'Peak ' + primaryNum, val: maxVal.toLocaleString(undefined, {maximumFractionDigits: 1})}
+                ];
+                kpiMeta.forEach(m => {
+                  const el = document.getElementById(m.id);
+                  if (el) {
+                    el.className = 'bg-slate-900/95 border border-slate-800 rounded-2xl p-5 flex flex-col gap-1 shadow-lg';
+                    el.innerHTML = `<span class="text-xs font-semibold uppercase tracking-wider text-indigo-400">${m.title}</span><span class="text-2xl font-extrabold text-white">${m.val}</span>`;
+                  }
+                });
+
+                const tHead = document.getElementById('tableHead') || document.querySelector('table thead');
+                let tBody = document.getElementById('tableBody') || document.querySelector('table tbody');
+                if (tHead && tBody && headers.length) {
+                  tHead.innerHTML = '<tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>';
+                  tBody.innerHTML = activeRows.map(r => '<tr>' + headers.map(h => `<td>${typeof r[h] === 'number' ? r[h].toLocaleString() : (r[h] ?? '')}</td>`).join('') + '</tr>').join('');
+                }
+
+                const chartCanvas = document.getElementById('mainChart') || document.querySelector('canvas');
+                if (chartCanvas && window.Chart) {
+                  if (chartCanvas.parentElement && chartCanvas.parentElement.id !== 'vfChartBox') {
+                    const parentCard = chartCanvas.parentElement;
+                    parentCard.className = 'bg-slate-900/95 border border-slate-800 rounded-2xl p-5 flex flex-col gap-3 shadow-lg col-span-full';
+                    const box = document.createElement('div');
+                    box.id = 'vfChartBox';
+                    box.className = 'w-full h-72 relative';
+                    chartCanvas.replaceWith(box);
+                    box.appendChild(chartCanvas);
+                  }
+                  const chartTypeEl = document.getElementById('vfChartType');
+                  const cType = chartTypeEl ? chartTypeEl.value : 'bar';
+                  new window.Chart(chartCanvas, {
+                    type: cType,
+                    data: {
+                      labels: activeRows.map((r, i) => String(r[labelCol] || ('Row ' + (i + 1)))),
+                      datasets: [
+                        {
+                          label: String(primaryNum),
+                          data: activeRows.map(r => Number(r[primaryNum]) || 0),
+                          backgroundColor: 'rgba(99, 102, 241, 0.55)',
+                          borderColor: '#818cf8',
+                          borderWidth: 2,
+                          borderRadius: 6
+                        },
+                        ...(secondaryNum !== primaryNum ? [{
+                          label: String(secondaryNum),
+                          data: activeRows.map(r => Number(r[secondaryNum]) || 0),
+                          backgroundColor: 'rgba(16, 185, 129, 0.45)',
+                          borderColor: '#34d399',
+                          borderWidth: 2,
+                          borderRadius: 6
+                        }] : [])
+                      ]
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { labels: { color: '#e2e8f0' } } },
+                      scales: cType === 'doughnut' ? {} : {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.35)' } },
+                        y: { beginAtZero: true, ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,0.35)' } }
+                      }
+                    }
+                  });
+                }
+              };
+
+              // Inject interactive CSV/TSV Upload, Paste Tabular Data & Live Search Panel if not already enhanced
+              const container = document.querySelector('.max-w-7xl') || document.body;
+              if (container && !document.getElementById('vfInteractiveBar')) {
+                const bar = document.createElement('div');
+                bar.id = 'vfInteractiveBar';
+                bar.className = 'bg-slate-900/95 border border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-xl';
+                bar.innerHTML = `
+                  <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h3 class="text-sm font-bold text-white uppercase tracking-wider">CSV / Excel / Tabular Data Input & Filter Controls</h3>
+                      <p class="text-xs text-slate-400">Upload a .csv / .tsv / .json file, paste raw tabular rows, or filter active records in real time.</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition inline-flex items-center gap-1.5">
+                        <span>📂 Upload CSV / Tabular File</span>
+                        <input id="vfFileInput" type="file" accept=".csv,.tsv,.txt,.json" class="hidden" />
+                      </label>
+                      <button id="vfTogglePasteBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl transition">📋 Paste CSV / Tabular Data</button>
+                      <select id="vfChartType" class="bg-slate-950 border border-slate-700 text-xs text-slate-200 rounded-xl px-3 py-2">
+                        <option value="bar">Chart: Grouped Bar</option>
+                        <option value="line">Chart: Line Trend</option>
+                        <option value="doughnut">Chart: Doughnut Share</option>
+                      </select>
+                      <button id="vfExportCsvBtn" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl transition">⬇ Export CSV</button>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <input id="vfSearchInput" type="text" placeholder="Filter rows by keyword, segment, region, or value..." class="w-full text-xs" />
+                  </div>
+                  <div id="vfPasteDrawer" class="hidden space-y-2 pt-2 border-t border-slate-800">
+                    <label class="text-xs font-semibold text-slate-300">Paste CSV or Tab-Separated (Excel copy/paste) rows below:</label>
+                    <textarea id="vfPasteArea" rows="4" class="w-full font-mono text-xs" placeholder="Segment,Region,Revenue,Units&#10;FinTech Core,North America,215000,640&#10;HealthAI,Europe,164000,490&#10;RetailOS,Asia-Pacific,198000,580"></textarea>
+                    <div class="flex justify-end gap-2">
+                      <button id="vfApplyPasteBtn" type="button" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-1.5 rounded-xl">Analyze Pasted Data</button>
+                    </div>
+                  </div>
+                `;
+                document.querySelectorAll('h2').forEach(h => {
+                  if ((h.textContent || '').trim().toLowerCase() === 'toolbar' && h.parentElement) {
+                    h.parentElement.remove();
+                  }
+                });
+                const kpiGrid = document.getElementById('kpi1')?.parentElement;
+                if (kpiGrid && kpiGrid.nextSibling) {
+                  kpiGrid.parentElement.insertBefore(bar, kpiGrid.nextSibling);
+                } else {
+                  container.prepend(bar);
+                }
+
+                document.getElementById('vfFileInput')?.addEventListener('change', (ev) => {
+                  const file = ev.target.files && ev.target.files[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (e) => {
+                    const parsed = window.parseTabularText(String(e.target.result || ''));
+                    if (parsed.length > 0) {
+                      appData = parsed;
+                      window.__syncDashboardView(appData);
+                    }
+                  };
+                  reader.readAsText(file);
+                });
+
+                document.getElementById('vfTogglePasteBtn')?.addEventListener('click', () => {
+                  document.getElementById('vfPasteDrawer')?.classList.toggle('hidden');
+                });
+
+                document.getElementById('vfApplyPasteBtn')?.addEventListener('click', () => {
+                  const raw = document.getElementById('vfPasteArea')?.value || '';
+                  const parsed = window.parseTabularText(raw);
+                  if (parsed.length > 0) {
+                    appData = parsed;
+                    window.__syncDashboardView(appData);
+                    document.getElementById('vfPasteDrawer')?.classList.add('hidden');
+                  }
+                });
+
+                document.getElementById('vfSearchInput')?.addEventListener('input', (ev) => {
+                  const q = (ev.target.value || '').toLowerCase().trim();
+                  if (!q) {
+                    window.__syncDashboardView(appData);
+                    return;
+                  }
+                  const filtered = appData.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(q)));
+                  window.__syncDashboardView(filtered);
+                });
+
+                document.getElementById('vfChartType')?.addEventListener('change', () => {
+                  window.__syncDashboardView(appData);
+                });
+
+                document.getElementById('vfExportCsvBtn')?.addEventListener('click', () => {
+                  if (!appData.length) return;
+                  const headers = Object.keys(appData[0]);
+                  const csv = [headers.join(','), ...appData.map(r => headers.map(h => JSON.stringify(r[h] ?? '')).join(','))].join('\n');
+                  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = 'analytical-dashboard-export.csv';
+                  a.click();
+                  URL.revokeObjectURL(url);
+                });
+              }
+
+              // Also wire any existing Upload / Export / Filter buttons in the LLM markup
+              document.querySelectorAll('button').forEach(btn => {
+                const txt = (btn.textContent || '').toLowerCase();
+                if (txt.includes('upload') && btn.id !== 'vfTogglePasteBtn') {
+                  btn.onclick = () => document.getElementById('vfFileInput')?.click();
+                } else if (txt.includes('export') && btn.id !== 'vfExportCsvBtn') {
+                  btn.onclick = () => document.getElementById('vfExportCsvBtn')?.click();
+                } else if (txt.includes('filter')) {
+                  btn.onclick = () => document.getElementById('vfSearchInput')?.focus();
+                }
+              });
+
+              window.__syncDashboardView(appData);
+            }
+          } catch (e) {
+            console.warn('[VibeForge Runtime Enhancer]', e);
+          }
+        }, 60);
+      });
+    })();
+  </script>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100 p-6">
+    <div class="flex flex-col items-center justify-center">
+        <h1 class="text-3xl font-bold mb-6">Console Applications Communication</h1>
+        <div class="flex flex-col w-full max-w-md">
+            <div class="bg-slate-800 p-4 rounded mb-4">
+                <h2 class="text-xl font-bold mb-2">App 1</h2>
+                <input type="text" id="app1Input" class="p-2 mb-2 rounded" placeholder="Message">
+                <button id="app1Send" class="p-2 rounded bg-slate-600 text-white">Send</button>
+                <div id="app1Output" class="mt-2"></div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded mb-4">
+                <h2 class="text-xl font-bold mb-2">App 2</h2>
+                <input type="text" id="app2Input" class="p-2 mb-2 rounded" placeholder="Message">
+                <button id="app2Send" class="p-2 rounded bg-slate-600 text-white">Send</button>
+                <div id="app2Output" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app1Input = document.getElementById('app1Input');
+        const app1Send = document.getElementById('app1Send');
+        const app1Output = document.getElementById('app1Output');
+        const app2Input = document.getElementById('app2Input');
+        const app2Send = document.getElementById('app2Send');
+        const app2Output = document.getElementById('app2Output');
+
+        const messageBroker = new MessageBroker();
+
+        app1Send.addEventListener('click', () => {
+            const message = app1Input.value;
+            messageBroker.sendMessage('app1', message);
+            app1Input.value = '';
+        });
+
+        app2Send.addEventListener('click', () => {
+            const message = app2Input.value;
+            messageBroker.sendMessage('app2', message);
+            app2Input.value = '';
+        });
+
+        messageBroker.on('app1', (message) => {
+            app2Output.textContent = message;
+        });
+
+        messageBroker.on('app2', (message) => {
+            app1Output.textContent = message;
+        });
+
+        class MessageBroker {
+            constructor() {
+                this.listeners = {};
+            }
+
+            on(event, callback) {
+                if (!this.listeners[event]) {
+                    this.listeners[event] = [];
+                }
+                this.listeners[event].push(callback);
+            }
+
+            sendMessage(event, message) {
+                if (this.listeners[event]) {
+                    this.listeners[event].forEach(callback => callback(message));
+                }
+            }
+        }
+    </script>
+</body>
+</html>
