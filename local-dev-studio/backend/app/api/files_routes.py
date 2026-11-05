@@ -923,3 +923,8 @@ def register_file_routes(
     async def get_local_llm_status() -> Dict[str, object]:
         return await coding_agent.llm_manager.get_status()
 
+    @app_router.put("/llm/curious-config")
+    async def update_curious_llm_config(payload: Dict[str, Any]) -> Dict[str, object]:
+        coding_agent.llm_manager.update_curious_config(payload)
+        return await coding_agent.llm_manager.get_status()
+

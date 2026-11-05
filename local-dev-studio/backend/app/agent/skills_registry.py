@@ -1069,19 +1069,29 @@ class SkillsRegistry:
         except Exception:
             return None
 
+    # Core server-level governance skills that belong to Local Bolt's base engine
+    # (configured in Core Governance) and must NOT be listed as workspace-level project skills.
+    CORE_GOVERNANCE_ONLY_SKILLS = {"curious-llm"}
+
     def list_skills(self) -> List[LLMSkill]:
-        by_id: Dict[str, LLMSkill] = {s.id: s for s in BUILTIN_SKILLS}
+        by_id: Dict[str, LLMSkill] = {
+            s.id: s for s in BUILTIN_SKILLS if s.id not in self.CORE_GOVERNANCE_ONLY_SKILLS
+        }
 
         for root_dir, default_cat in self._external_skill_roots():
             if not root_dir.exists():
                 continue
             for child in sorted(root_dir.iterdir()):
-                if not child.is_dir():
+                if not child.is_dir() or child.name in self.CORE_GOVERNANCE_ONLY_SKILLS:
                     continue
                 md_file = child / "SKILL.md"
                 if md_file.exists():
                     parsed = self._parse_skill_md(child, md_file, default_category=default_cat)
-                    if parsed and parsed.id not in by_id:
+                    if (
+                        parsed
+                        and parsed.id not in by_id
+                        and parsed.id not in self.CORE_GOVERNANCE_ONLY_SKILLS
+                    ):
                         by_id[parsed.id] = parsed
 
         return list(by_id.values())

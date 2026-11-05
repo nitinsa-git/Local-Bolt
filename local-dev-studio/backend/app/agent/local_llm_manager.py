@@ -51,12 +51,48 @@ class LocalLLMManager:
         self.runtime_dir = self.backend_root / "llm_runtime"
         self.llama_server_bin = self.runtime_dir / "bin" / "llama-server.exe"
         self.models_dir = self.runtime_dir / "models"
+        self.curious_config_path = self.runtime_dir / "curious_llm_governance.json"
         self.default_port = int(os.environ.get("LOCAL_LLM_PORT", "8780"))
         self.default_host = f"http://127.0.0.1:{self.default_port}"
         self._proc: Optional[subprocess.Popen] = None
         self._starting_lock = asyncio.Lock()
         self._preferred_model_name: Optional[str] = os.environ.get("LOCAL_LLM_MODEL")
         self._last_reasoning_trace: str = ""
+        self._curious_overrides: Dict[str, Any] = self._load_curious_overrides()
+        if self._curious_overrides.get("preferred_model"):
+            self._preferred_model_name = str(self._curious_overrides["preferred_model"])
+
+    def _load_curious_overrides(self) -> Dict[str, Any]:
+        if self.curious_config_path.exists():
+            try:
+                return json.loads(self.curious_config_path.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+        return {}
+
+    def is_curious_enabled(self) -> bool:
+        return bool(self._curious_overrides.get("enabled", True))
+
+    def update_curious_config(self, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Updates core server-level CuriousLLM & Higher-LLM governance settings
+        (persisted in `llm_runtime/curious_llm_governance.json`).
+        """
+        merged = {**self._curious_overrides, **updates}
+        self._curious_overrides = merged
+        if "preferred_model" in updates:
+            val = str(updates["preferred_model"] or "").strip()
+            self._preferred_model_name = val if val else None
+        try:
+            self.runtime_dir.mkdir(parents=True, exist_ok=True)
+            self.curious_config_path.write_text(
+                json.dumps(merged, indent=2), encoding="utf-8"
+            )
+        except Exception as exc:
+            logger.warning(
+                json.dumps({"event": "curious_config_save_warning", "error": str(exc)})
+            )
+        return self._probe_system_resources()
 
     def _probe_system_resources(self) -> Dict[str, Any]:
         """
@@ -122,24 +158,39 @@ class LocalLLMManager:
             max_tier = "3B-7B (Q4_K_M)"
             default_ctx = 6144
 
-        kv_quant = os.environ.get(
-            "LOCAL_LLM_KV_QUANT",
-            "q8_0" if total_ram_gb >= 12.0 else "q4_0",
+        default_kv = "q8_0" if total_ram_gb >= 12.0 else "q4_0"
+        kv_quant = str(
+            self._curious_overrides.get("kv_cache_quant")
+            or os.environ.get("LOCAL_LLM_KV_QUANT", default_kv)
         )
-        ctx_size = int(os.environ.get("LOCAL_LLM_CTX_SIZE", str(default_ctx)))
+        ctx_size = int(
+            self._curious_overrides.get("ctx_size")
+            or os.environ.get("LOCAL_LLM_CTX_SIZE", str(default_ctx))
+        )
+        enabled = bool(self._curious_overrides.get("enabled", True))
+        flash_attn = bool(self._curious_overrides.get("flash_attention", True))
+        mmap_stream = bool(self._curious_overrides.get("mmap_streaming", True))
+        reasoning_hops = int(self._curious_overrides.get("reasoning_hops", 3))
+        preferred_model = str(
+            self._curious_overrides.get("preferred_model")
+            or self._preferred_model_name
+            or "auto"
+        )
 
         return {
-            "enabled": True,
+            "enabled": enabled,
             "engine": "CuriousLLM Base Server Engine v1.0",
             "reasoning_mode": "curiosity-multi-hop",
+            "reasoning_hops": reasoning_hops,
+            "preferred_model": preferred_model,
             "total_ram_gb": total_ram_gb,
             "avail_ram_gb": avail_ram_gb,
             "swap_total_gb": swap_total_gb,
             "effective_memory_gb": effective_mem_gb,
             "max_feasible_tier": max_tier,
             "kv_cache_quant": kv_quant,
-            "flash_attention": True,
-            "mmap_streaming": True,
+            "flash_attention": flash_attn,
+            "mmap_streaming": mmap_stream,
             "ctx_size": ctx_size,
         }
 

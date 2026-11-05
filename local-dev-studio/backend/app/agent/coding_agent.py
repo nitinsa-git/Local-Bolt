@@ -1242,13 +1242,16 @@ export default function GeneratedStudioApp() {{
         taste_profile = self._infer_taste_skill_profile(
             prompt, combined_lower, active_skills
         )
-        curious_brief = self._curious_llm_decompose_prompt(
-            prompt, context_files, all_prompts
+        curious_enabled = self.llm_manager.is_curious_enabled()
+        curious_brief = (
+            self._curious_llm_decompose_prompt(prompt, context_files, all_prompts)
+            if curious_enabled
+            else {"directive": ""}
         )
         user_msg = (
             f"REQUEST: {prompt}\n"
             + (f"HISTORY:\n{history_str}\n" if len(all_prompts) > 1 else "")
-            + f"{curious_brief['directive']}\n\n"
+            + (f"{curious_brief['directive']}\n\n" if curious_enabled else "")
             + (f"{taste_profile['prompt_directive']}\n\n" if any(s == "taste-skill" or s.startswith("taste-") for s in active_skills) else "")
             + skills_line
             + existing_context_section
