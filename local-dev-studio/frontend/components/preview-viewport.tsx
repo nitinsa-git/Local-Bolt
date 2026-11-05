@@ -21,14 +21,13 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { BACKEND_HTTP, useStudioStore } from "@/lib/store";
+import { BACKEND_HTTP, resolvePreviewUrl, useStudioStore } from "@/lib/store";
 
 type ViewportMode = "desktop" | "tablet" | "mobile";
 
 export function PreviewViewport() {
   const {
     projectId,
-    previewUrl,
     previewRefreshKey,
     bumpPreviewRefresh,
     consoleLogs,
@@ -43,6 +42,7 @@ export function PreviewViewport() {
   } = useStudioStore();
 
   const activePid = projectId || "default";
+  const previewUrl = resolvePreviewUrl(`/api/projects/${activePid}/preview`);
   const standaloneAppUrl = `${BACKEND_HTTP}/apps/${activePid}`;
   const blueprintApiUrl = `${BACKEND_HTTP}/api/projects/${activePid}/blueprint`;
   const promptsApiUrl = `${BACKEND_HTTP}/api/projects/${activePid}/prompts`;
@@ -485,9 +485,9 @@ export function PreviewViewport() {
         >
           <iframe
             ref={iframeRef}
-            key={previewRefreshKey}
+            key={`${activePid}-${previewRefreshKey}`}
             src={`${previewUrl}?t=${previewRefreshKey}`}
-            title="Live Container Preview"
+            title={`Live Container Preview (${activePid})`}
             className="w-full h-full border-0 bg-slate-950"
           />
         </motion.div>

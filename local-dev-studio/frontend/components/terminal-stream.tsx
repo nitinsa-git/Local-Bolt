@@ -7,7 +7,7 @@ import {
   Send,
   Terminal as TerminalIcon,
 } from "lucide-react";
-import { BACKEND_WS, useStudioStore } from "@/lib/store";
+import { BACKEND_HTTP, BACKEND_WS, useStudioStore } from "@/lib/store";
 import type { Terminal as XTermType } from "@xterm/xterm";
 
 export function TerminalStream() {
@@ -79,6 +79,26 @@ export function TerminalStream() {
       );
       termRef.current = term;
 
+      let inlineBuffer = "";
+      term.onData((data) => {
+        if (data === "\r") {
+          const cmdToRun = inlineBuffer.trim();
+          inlineBuffer = "";
+          term.write("\r\n");
+          if (cmdToRun) {
+            dispatchShellCommand(cmdToRun);
+          }
+        } else if (data === "\u007F") {
+          if (inlineBuffer.length > 0) {
+            inlineBuffer = inlineBuffer.slice(0, -1);
+            term.write("\b \b");
+          }
+        } else if (data >= " " && data <= "~") {
+          inlineBuffer += data;
+          term.write(data);
+        }
+      });
+
       const ws = new WebSocket(`${BACKEND_WS}/ws/terminal/${projectId}`);
       wsRef.current = ws;
 
@@ -133,19 +153,44 @@ export function TerminalStream() {
         termRef.current = null;
       }
     };
-  }, [projectId, showSandboxShell, appendConsoleLog]);
+  }, [projectId, showSandboxShell]);
+
+  const dispatchShellCommand = async (rawCmd: string) => {
+    const cmd = rawCmd.trim();
+    if (!cmd) return;
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ command: cmd }));
+      return;
+    }
+    try {
+      termRef.current?.writeln(`\x1b[1;36m$ ${cmd}\x1b[0m`);
+      const res = await fetch(
+        `${BACKEND_HTTP}/api/projects/${projectId}/terminal/exec`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ command: cmd }),
+        }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.output) {
+          termRef.current?.write(
+            String(data.output).replace(/\r\n/g, "\n").replace(/\n/g, "\r\n")
+          );
+        }
+      }
+    } catch (err) {
+      termRef.current?.writeln(`\x1b[1;31m[Error] ${String(err)}\x1b[0m`);
+    }
+  };
 
   const sendCommand = (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      !commandInput.trim() ||
-      !wsRef.current ||
-      wsRef.current.readyState !== WebSocket.OPEN
-    ) {
-      return;
-    }
-    wsRef.current.send(JSON.stringify({ command: commandInput }));
+    const cmd = commandInput.trim();
+    if (!cmd) return;
     setCommandInput("");
+    dispatchShellCommand(cmd);
   };
 
   return (

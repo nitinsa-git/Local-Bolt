@@ -392,7 +392,7 @@ def register_file_routes(
                     has_git=(d / ".git").exists(),
                     skills=meta.skills,
                     last_modified=mtime,
-                    preview_url=f"http://localhost:8700/api/projects/{d.name}/preview",
+                    preview_url=f"/api/projects/{d.name}/preview",
                 )
             )
         return summaries
@@ -454,7 +454,7 @@ def register_file_routes(
             has_git=(ws_path / ".git").exists(),
             skills=selected_skills,
             last_modified=datetime.now(timezone.utc).isoformat(),
-            preview_url=f"http://localhost:8700/api/projects/{safe_id}/preview",
+            preview_url=f"/api/projects/{safe_id}/preview",
         )
 
     @app_router.post("/workspaces/import", response_model=WorkspaceSummary)
@@ -517,13 +517,23 @@ def register_file_routes(
             has_git=(ws_path / ".git").exists(),
             skills=meta.skills,
             last_modified=datetime.now(timezone.utc).isoformat(),
-            preview_url=f"http://localhost:8700/api/projects/{safe_id}/preview",
+            preview_url=f"/api/projects/{safe_id}/preview",
         )
 
     @app_router.get("/projects/{project_id}/chat-history", response_model=WorkspaceMetaResponse)
     async def get_project_chat_history(project_id: str) -> WorkspaceMetaResponse:
         ws_path: Path = docker_manager.get_workspace_path(project_id)
         return _read_workspace_meta(ws_path, project_id)
+
+    @app_router.post("/projects/{project_id}/terminal/exec")
+    async def execute_project_terminal_command(
+        project_id: str, payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        cmd = str(payload.get("command") or "").strip()
+        if not cmd:
+            raise HTTPException(status_code=400, detail="Command cannot be empty")
+        res = await process_runner.run_command(project_id=project_id, command=cmd)
+        return res.model_dump()
 
     @app_router.post("/projects/create", response_model=AgentRunReport)
     async def create_project(req: CreateProjectRequest) -> AgentRunReport:
@@ -545,6 +555,15 @@ def register_file_routes(
             template=effective_template,
             skills=effective_skills,
         )
+
+        p_clean = req.prompt.strip().lower().rstrip(".!")
+        if p_clean in ("reset the workspace", "reset workspace", "clear workspace", "clear the workspace", "reset"):
+            meta.template = effective_template
+            meta.template_locked = False
+            meta.skills = effective_skills
+            meta.chat_history = []
+            _write_workspace_meta(ws_path, meta)
+            return report
 
         # Persist chat history entry and lock Staff Engineer Agent template once finalized
         history_entry = ChatHistoryItem(

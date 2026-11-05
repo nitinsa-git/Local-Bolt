@@ -80,9 +80,7 @@ export function AgentConsole() {
     setShowSelectedSkills,
   } = useStudioStore();
 
-  const [prompt, setPrompt] = useState(
-    "Create a responsive portal for UI/ UX animations for HTML5 and also when selected the respective type it also provide a sample code for the same"
-  );
+  const [prompt, setPrompt] = useState("");
   const [activeMissionPrompt, setActiveMissionPrompt] = useState<string | null>(
     null
   );
@@ -149,27 +147,30 @@ export function AgentConsole() {
     }
   };
 
-  const fetchFiles = async () => {
+  const fetchFiles = async (targetPid = projectId) => {
     try {
       const res = await fetch(
-        `${BACKEND_HTTP}/api/projects/${projectId}/files`
+        `${BACKEND_HTTP}/api/projects/${targetPid}/files`
       );
       if (res.ok) {
         const data = await res.json();
-        setFiles(data);
+        if (useStudioStore.getState().projectId === targetPid) {
+          setFiles(data);
+        }
       }
     } catch (err) {
       console.warn("Failed to load workspace files:", err);
     }
   };
 
-  const fetchChatHistoryAndMeta = async () => {
+  const fetchChatHistoryAndMeta = async (targetPid = projectId) => {
     try {
       const res = await fetch(
-        `${BACKEND_HTTP}/api/projects/${projectId}/chat-history`
+        `${BACKEND_HTTP}/api/projects/${targetPid}/chat-history`
       );
       if (res.ok) {
         const meta = await res.json();
+        if (useStudioStore.getState().projectId !== targetPid) return;
         if (meta.template) setTemplate(meta.template);
         setTemplateLocked(Boolean(meta.template_locked));
         if (Array.isArray(meta.skills)) {
@@ -180,14 +181,6 @@ export function AgentConsole() {
         }
         const list = Array.isArray(meta.chat_history) ? meta.chat_history : [];
         setChatHistory(list);
-        if (list.length > 0) {
-          setPrompt((prev) =>
-            prev ===
-            "Create a responsive portal for UI/ UX animations for HTML5 and also when selected the respective type it also provide a sample code for the same"
-              ? ""
-              : prev
-          );
-        }
       }
     } catch (err) {
       console.warn("Failed to load chat history:", err);
@@ -200,15 +193,19 @@ export function AgentConsole() {
   }, []);
 
   useEffect(() => {
+    const activePid = projectId;
     setActiveMissionPrompt(null);
-    fetchFiles();
-    fetchChatHistoryAndMeta();
-    const ws = new WebSocket(`${BACKEND_WS}/ws/agent/${projectId}`);
+    setPrompt("");
+    fetchFiles(activePid);
+    fetchChatHistoryAndMeta(activePid);
+    const ws = new WebSocket(`${BACKEND_WS}/ws/agent/${activePid}`);
     wsRef.current = ws;
 
     ws.onmessage = (event) => {
       try {
+        if (useStudioStore.getState().projectId !== activePid) return;
         const payload = JSON.parse(event.data);
+        if (payload.project_id && payload.project_id !== activePid) return;
         if (payload.type === "step" && payload.step) {
           upsertStep(payload.step);
           appendConsoleLog(
@@ -227,8 +224,10 @@ export function AgentConsole() {
             setPreviewUrl(payload.preview_url);
           }
           bumpPreviewRefresh();
-          fetchFiles();
-          fetchChatHistoryAndMeta().then(() => setActiveMissionPrompt(null));
+          fetchFiles(activePid);
+          fetchChatHistoryAndMeta(activePid).then(() =>
+            setActiveMissionPrompt(null)
+          );
         }
       } catch (e) {
         console.warn("Malformed agent event:", e);
@@ -407,13 +406,14 @@ export function AgentConsole() {
     const submittedPrompt = prompt.trim();
     if (!submittedPrompt || isRunningAgent) return;
 
+    const targetPid = projectId;
     setActiveMissionPrompt(submittedPrompt);
     setPrompt("");
     resetSteps();
     setIsRunningAgent(true);
     setTemplateLocked(true);
     appendConsoleLog(
-      `[VibeForge] Dispatching mission: "${submittedPrompt}" (Skills: ${
+      `[VibeForge] Dispatching mission (${targetPid}): "${submittedPrompt}" (Skills: ${
         selectedSkills.join(", ") || "none"
       })`
     );
@@ -423,7 +423,7 @@ export function AgentConsole() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          project_id: projectId,
+          project_id: targetPid,
           template,
           prompt: submittedPrompt,
           skills: selectedSkills,
@@ -431,18 +431,22 @@ export function AgentConsole() {
       });
       if (res.ok) {
         const report = await res.json();
-        if (report.preview_url) {
-          setPreviewUrl(report.preview_url);
+        if (useStudioStore.getState().projectId === targetPid) {
+          if (report.preview_url) {
+            setPreviewUrl(report.preview_url);
+          }
+          bumpPreviewRefresh();
+          await fetchFiles(targetPid);
+          await fetchChatHistoryAndMeta(targetPid);
         }
-        bumpPreviewRefresh();
-        await fetchFiles();
-        await fetchChatHistoryAndMeta();
       }
     } catch (err) {
       appendConsoleLog(`[Error] Failed to trigger agent: ${String(err)}`);
     } finally {
-      setActiveMissionPrompt(null);
-      setIsRunningAgent(false);
+      if (useStudioStore.getState().projectId === targetPid) {
+        setActiveMissionPrompt(null);
+        setIsRunningAgent(false);
+      }
     }
   };
 

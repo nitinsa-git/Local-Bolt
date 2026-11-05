@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -144,21 +145,25 @@ class LocalLLMManager:
         except Exception:
             pass
 
+        cpu_cores = os.cpu_count() or 2
+        has_gpu = shutil.which("nvidia-smi") is not None
+        is_low_cpu_host = cpu_cores <= 2 and not has_gpu
+
         effective_mem_gb = round(total_ram_gb + (swap_total_gb * 0.65), 2)
-        if effective_mem_gb >= 22.0:
+        if effective_mem_gb >= 22.0 and not is_low_cpu_host:
             max_tier = "32B (Q4_K_M / IQ4_XS)"
             default_ctx = 12288
-        elif effective_mem_gb >= 11.5:
+        elif effective_mem_gb >= 11.5 and not is_low_cpu_host:
             max_tier = "14B (Q4_K_M) / 7B-8B (Q8_0)"
             default_ctx = 8192
-        elif effective_mem_gb >= 7.5:
+        elif effective_mem_gb >= 7.5 and not is_low_cpu_host:
             max_tier = "7B-8B (Q4_K_M) / 14B (IQ3_M + Swap)"
             default_ctx = 8192
         else:
-            max_tier = "3B-7B (Q4_K_M)"
-            default_ctx = 6144
+            max_tier = "3B-7B (Q4_K_M • CPU Fast-Path)"
+            default_ctx = 2048 if is_low_cpu_host else 6144
 
-        default_kv = "q8_0" if total_ram_gb >= 12.0 else "q4_0"
+        default_kv = "q8_0" if total_ram_gb >= 12.0 and not is_low_cpu_host else "q4_0"
         kv_quant = str(
             self._curious_overrides.get("kv_cache_quant")
             or os.environ.get("LOCAL_LLM_KV_QUANT", default_kv)
@@ -187,6 +192,9 @@ class LocalLLMManager:
             "avail_ram_gb": avail_ram_gb,
             "swap_total_gb": swap_total_gb,
             "effective_memory_gb": effective_mem_gb,
+            "cpu_cores": cpu_cores,
+            "has_gpu": has_gpu,
+            "is_low_cpu_host": is_low_cpu_host,
             "max_feasible_tier": max_tier,
             "kv_cache_quant": kv_quant,
             "flash_attention": flash_attn,
@@ -239,6 +247,12 @@ class LocalLLMManager:
 
     async def is_endpoint_alive(self, base_url: str, timeout: float = 1.8) -> Optional[Dict[str, Any]]:
         url = base_url.rstrip("/")
+        is_low_cpu = (os.cpu_count() or 2) <= 2 and shutil.which("nvidia-smi") is None
+        priority_patterns = (
+            ("qwen2.5-coder:3b", "3b", "2b", "1.5b", *HIGHER_LLM_PRIORITY_PATTERNS)
+            if is_low_cpu
+            else HIGHER_LLM_PRIORITY_PATTERNS
+        )
         try:
             async with httpx.AsyncClient(timeout=timeout) as client:
                 r = await client.get(f"{url}/v1/models")
@@ -260,13 +274,13 @@ class LocalLLMManager:
                         if custom_match:
                             preferred = custom_match
                         else:
-                            for pattern in HIGHER_LLM_PRIORITY_PATTERNS:
+                            for pattern in priority_patterns:
                                 match = next((m for m in all_ids if pattern in m.lower()), None)
                                 if match:
                                     preferred = match
                                     break
                     else:
-                        for pattern in HIGHER_LLM_PRIORITY_PATTERNS:
+                        for pattern in priority_patterns:
                             match = next((m for m in all_ids if pattern in m.lower()), None)
                             if match:
                                 preferred = match
@@ -292,13 +306,13 @@ class LocalLLMManager:
                             if custom_match:
                                 preferred = custom_match
                             else:
-                                for pattern in HIGHER_LLM_PRIORITY_PATTERNS:
+                                for pattern in priority_patterns:
                                     match = next((m for m in models if pattern in m.lower()), None)
                                     if match:
                                         preferred = match
                                         break
                         else:
-                            for pattern in HIGHER_LLM_PRIORITY_PATTERNS:
+                            for pattern in priority_patterns:
                                 match = next((m for m in models if pattern in m.lower()), None)
                                 if match:
                                     preferred = match
@@ -514,8 +528,64 @@ class LocalLLMManager:
         or optional cloud API keys if configured in workspace `.env`.
         """
         env = ws_env or {}
-        endpoint_info = await self.ensure_local_llm_server()
         curious_profile = self._probe_system_resources()
+        is_low_cpu_host = bool(curious_profile.get("is_low_cpu_host"))
+
+        # Check Cloud API keys first if configured in workspace .env or environment
+        openai_key = env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+        if openai_key:
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    resp = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {openai_key}"},
+                        json={
+                            "model": env.get("OPENAI_MODEL", "gpt-4o-mini"),
+                            "temperature": temperature,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_prompt},
+                            ],
+                        },
+                    )
+                    if resp.status_code == 200:
+                        return resp.json()["choices"][0]["message"]["content"], "OpenAI API"
+            except Exception:
+                pass
+
+        gemini_key = env.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        if gemini_key:
+            try:
+                model = env.get("GEMINI_MODEL", "gemini-2.0-flash")
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    resp = await client.post(
+                        url,
+                        json={
+                            "contents": [
+                                {
+                                    "role": "user",
+                                    "parts": [{"text": system_prompt + "\n\n" + user_prompt}],
+                                }
+                            ]
+                        },
+                    )
+                    if resp.status_code == 200:
+                        candidates = resp.json().get("candidates", [])
+                        if candidates:
+                            return (
+                                candidates[0]["content"]["parts"][0]["text"],
+                                f"Gemini ({model})",
+                            )
+            except Exception:
+                pass
+
+        # On 2-vCPU CPU-only cloud hosts (e.g. AWS m7i-flex.large without GPU), avoid pegging
+        # CPU for 480s on heavy full-page synthesis; fast-path to Domain-Aware Neural Synthesizer.
+        if is_low_cpu_host and max_tokens >= 300:
+            return None
+
+        endpoint_info = await self.ensure_local_llm_server()
 
         if endpoint_info:
             url = endpoint_info["url"]
@@ -525,10 +595,11 @@ class LocalLLMManager:
                 tag in model_id.lower() for tag in ("deepseek-r1", "qwq", "r1", "qwen3")
             )
             effective_max_tokens = (
-                max(max_tokens, 2048) if is_reasoning_model else max_tokens
+                max(max_tokens, 2048) if is_reasoning_model and not is_low_cpu_host else max_tokens
             )
+            req_timeout = 18.0 if is_low_cpu_host else 120.0
             try:
-                async with httpx.AsyncClient(timeout=480.0) as client:
+                async with httpx.AsyncClient(timeout=req_timeout) as client:
                     if ptype == "openai_compat":
                         resp = await client.post(
                             f"{url}/v1/chat/completions",
@@ -556,12 +627,12 @@ class LocalLLMManager:
                             json={
                                 "model": model_id,
                                 "stream": False,
-                                "keep_alive": "15m",
+                                "keep_alive": "5m" if is_low_cpu_host else "15m",
                                 "options": {
                                     "temperature": temperature,
                                     "num_predict": effective_max_tokens,
-                                    "num_ctx": curious_profile.get("ctx_size", 8192),
-                                    "num_batch": 512,
+                                    "num_ctx": curious_profile.get("ctx_size", 2048 if is_low_cpu_host else 8192),
+                                    "num_batch": 256 if is_low_cpu_host else 512,
                                     "stop": ["</html>"],
                                 },
                                 "messages": [
@@ -579,54 +650,5 @@ class LocalLLMManager:
                 logger.warning(
                     json.dumps({"event": "local_llm_inference_error", "error": repr(exc)})
                 )
-
-        # Optional Cloud API fallback if user explicitly added keys to .env
-        openai_key = env.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-        if openai_key:
-            try:
-                async with httpx.AsyncClient(timeout=90.0) as client:
-                    resp = await client.post(
-                        "https://api.openai.com/v1/chat/completions",
-                        headers={"Authorization": f"Bearer {openai_key}"},
-                        json={
-                            "model": env.get("OPENAI_MODEL", "gpt-4o-mini"),
-                            "temperature": temperature,
-                            "messages": [
-                                {"role": "system", "content": system_prompt},
-                                {"role": "user", "content": user_prompt},
-                            ],
-                        },
-                    )
-                    if resp.status_code == 200:
-                        return resp.json()["choices"][0]["message"]["content"], "OpenAI API"
-            except Exception:
-                pass
-
-        gemini_key = env.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
-        if gemini_key:
-            try:
-                model = env.get("GEMINI_MODEL", "gemini-2.0-flash")
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_key}"
-                async with httpx.AsyncClient(timeout=90.0) as client:
-                    resp = await client.post(
-                        url,
-                        json={
-                            "contents": [
-                                {
-                                    "role": "user",
-                                    "parts": [{"text": system_prompt + "\n\n" + user_prompt}],
-                                }
-                            ]
-                        },
-                    )
-                    if resp.status_code == 200:
-                        candidates = resp.json().get("candidates", [])
-                        if candidates:
-                            return (
-                                candidates[0]["content"]["parts"][0]["text"],
-                                f"Gemini ({model})",
-                            )
-            except Exception:
-                pass
 
         return None

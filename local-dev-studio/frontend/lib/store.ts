@@ -248,7 +248,11 @@ export const useStudioStore = create<StudioState>((set) => ({
     set((state) => ({
       projectId,
       steps: [],
-      previewUrl: `${BACKEND_HTTP}/api/projects/${projectId}/preview`,
+      chatHistory: [],
+      files: [],
+      isRunningAgent: false,
+      templateLocked: false,
+      previewUrl: resolvePreviewUrl(`/api/projects/${projectId}/preview`),
       previewRefreshKey: state.previewRefreshKey + 1,
     })),
   setWorkspaces: (workspaces) => set({ workspaces }),
