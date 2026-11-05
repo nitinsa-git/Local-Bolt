@@ -3,12 +3,16 @@
 import React, { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Check,
   ChevronDown,
   Code2,
   Compass,
+  Copy,
   ExternalLink,
   Laptop,
+  Maximize2,
   MessageSquareCode,
+  Minimize2,
   PanelBottom,
   PanelLeftClose,
   PanelLeftOpen,
@@ -36,6 +40,8 @@ export function PreviewViewport() {
     setFiles,
     showEditor,
     setShowEditor,
+    workbenchMode,
+    setWorkbenchMode,
     showPreviewConsole,
     setShowPreviewConsole,
     isRunningAgent,
@@ -107,10 +113,22 @@ export function PreviewViewport() {
 
   const [viewport, setViewport] = useState<ViewportMode>("desktop");
   const [showAiRuntimeInfo, setShowAiRuntimeInfo] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const [tasteDv, setTasteDv] = useState<number>(6);
   const [tasteMi, setTasteMi] = useState<number>(6);
   const [tasteVd, setTasteVd] = useState<number>(5);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
+
+  const handleCopyPreviewUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(standaloneAppUrl);
+      setCopiedUrl(true);
+      appendConsoleLog(`[Preview] Copied standalone URL: ${standaloneAppUrl}`);
+      setTimeout(() => setCopiedUrl(false), 1800);
+    } catch {
+      // ignore clipboard errors
+    }
+  };
 
   const syncTasteDialsToPreview = (dv: number, mi: number, vd: number) => {
     setTasteDv(dv);
@@ -143,15 +161,15 @@ export function PreviewViewport() {
       ? "768px"
       : "100% Fluid";
 
+  const isCinema = workbenchMode === "cinema";
+
   return (
     <motion.section
       layout
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className={`${
-        showEditor ? "w-[480px] xl:w-[560px] shrink-0" : "flex-1 min-w-0"
-      } flex flex-col bento-glass rounded-2xl overflow-hidden h-full`}
+      className="flex-1 min-w-0 flex flex-col bento-glass rounded-2xl overflow-hidden h-full"
     >
-      {/* Top 21st.dev Interactive Browser Chrome Toolbar */}
+      {/* Top NextGen Spatial Browser Chrome Toolbar */}
       <div className="relative z-30 h-11 px-3.5 border-b border-white/[0.08] bg-slate-950/85 flex items-center justify-between gap-2.5 shrink-0">
         {/* Left: macOS Traffic Lights + Toggle Editor Icon + Device Viewport Toggles */}
         <div className="flex items-center gap-2">
@@ -168,8 +186,8 @@ export function PreviewViewport() {
             onClick={() => setShowEditor(!showEditor)}
             className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-semibold transition ${
               showEditor
-                ? "bg-indigo-600/25 text-indigo-200 border-indigo-400/50 shadow-sm shadow-indigo-500/20"
-                : "bg-slate-950/90 text-slate-200 border-slate-700/80 hover:border-indigo-400/50 hover:text-white"
+                ? "bg-cyan-500/20 text-cyan-200 border-cyan-400/50 shadow-sm shadow-cyan-500/20"
+                : "bg-slate-950/90 text-slate-200 border-slate-700/80 hover:border-cyan-400/50 hover:text-white"
             }`}
             title={
               showEditor
@@ -178,9 +196,9 @@ export function PreviewViewport() {
             }
           >
             {showEditor ? (
-              <PanelLeftClose className="w-3.5 h-3.5 text-indigo-300" />
+              <PanelLeftClose className="w-3.5 h-3.5 text-cyan-300" />
             ) : (
-              <PanelLeftOpen className="w-3.5 h-3.5 text-indigo-400" />
+              <PanelLeftOpen className="w-3.5 h-3.5 text-cyan-400" />
             )}
             <Code2 className="w-3.5 h-3.5" />
           </motion.button>
@@ -209,7 +227,7 @@ export function PreviewViewport() {
                   <motion.span
                     layoutId="preview-device-pill"
                     transition={{ type: "spring", stiffness: 380, damping: 28 }}
-                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-indigo-600 to-fuchsia-600 -z-10 shadow-sm shadow-indigo-500/30"
+                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-cyan-600 to-indigo-600 -z-10 shadow-sm shadow-cyan-500/30"
                   />
                 )}
                 <Icon className="w-3.5 h-3.5" />
@@ -217,14 +235,14 @@ export function PreviewViewport() {
             ))}
           </div>
 
-          <span className="hidden xl:inline-flex items-center text-[10px] font-mono font-semibold px-2 py-0.5 leading-none rounded-md bg-indigo-500/15 border border-indigo-400/35 text-indigo-200">
+          <span className="hidden xl:inline-flex items-center text-[10px] font-mono font-semibold px-2 py-0.5 leading-none rounded-md bg-cyan-500/15 border border-cyan-400/35 text-cyan-200">
             {viewportDimensionLabel}
           </span>
         </div>
 
-        {/* Center: Live Preview URL Bar with Active Pulse */}
-        <div className="flex-1 flex items-center justify-between gap-2 truncate px-3 py-1 rounded-xl bg-slate-950/90 border border-slate-700/80 text-[11px] font-mono text-slate-100">
-          <div className="flex items-center gap-2 truncate">
+        {/* Center: Arc-Style Interactive Preview URL Pill with Copy & Live Pulse */}
+        <div className="flex-1 flex items-center justify-between gap-2 truncate px-3 py-1 rounded-xl bg-slate-950/90 border border-white/[0.09] text-[11px] font-mono text-slate-100">
+          <div className="flex items-center gap-2 truncate min-w-0">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
                 isRunningAgent
@@ -232,15 +250,61 @@ export function PreviewViewport() {
                   : "bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400"
               }`}
             />
-            <span className="truncate">{previewUrl}</span>
+            <span className="text-cyan-300 font-semibold shrink-0 hidden sm:inline">
+              vibeforge://{activePid}
+            </span>
+            <span className="text-slate-600 hidden sm:inline">•</span>
+            <span className="truncate text-slate-300">{previewUrl}</span>
           </div>
-          <span className="hidden md:inline-flex items-center text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 leading-none rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0 shadow-sm shadow-emerald-500/10">
-            {isRunningAgent ? "Synthesizing" : "Live"}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleCopyPreviewUrl}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-white/[0.08] text-[9.5px] text-slate-300 hover:text-cyan-200 transition"
+              title="Copy Standalone Application Link"
+            >
+              {copiedUrl ? (
+                <>
+                  <Check className="w-2.5 h-2.5 text-emerald-400" />
+                  <span className="text-emerald-300">Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-2.5 h-2.5 text-cyan-400" />
+                  <span className="hidden lg:inline">Copy URL</span>
+                </>
+              )}
+            </button>
+            <span className="hidden md:inline-flex items-center text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 leading-none rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shrink-0 shadow-sm shadow-emerald-500/10">
+              {isRunningAgent ? "Synthesizing" : "Live"}
+            </span>
+          </div>
         </div>
 
-        {/* Right: Toggle Preview Console Icon + Reload + Open External */}
+        {/* Right: Cinema Toggle + Preview Console + Reload + Runtime Info + Open External */}
         <div className="flex items-center gap-1">
+          <motion.button
+            whileHover={{ y: -1, scale: 1.03 }}
+            whileTap={{ scale: 0.95 }}
+            type="button"
+            onClick={() => setWorkbenchMode(isCinema ? "split" : "cinema")}
+            className={`p-1.5 rounded-lg border text-xs font-semibold transition ${
+              isCinema
+                ? "bg-cyan-500/25 text-cyan-200 border-cyan-400/50"
+                : "bg-slate-950/90 text-slate-200 border-slate-700/80 hover:border-cyan-400/50 hover:text-white"
+            }`}
+            title={
+              isCinema
+                ? "Exit Preview Cinema Mode (Return to Split Studio)"
+                : "Enter Preview Cinema Fullscreen Mode"
+            }
+          >
+            {isCinema ? (
+              <Minimize2 className="w-3.5 h-3.5 text-cyan-300" />
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
+            )}
+          </motion.button>
           <motion.button
             whileHover={{ y: -1, scale: 1.03 }}
             whileTap={{ scale: 0.95 }}

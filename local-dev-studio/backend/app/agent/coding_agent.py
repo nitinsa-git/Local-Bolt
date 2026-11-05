@@ -527,6 +527,30 @@ server.listen(port, '0.0.0.0', () => {
   </style>"""
             )
 
+        has_nextgen_ui = any(
+            s == "nextgen-ui" or s.startswith("nextgen-") for s in active_skills
+        )
+        if has_nextgen_ui and "vibeforge-nextgen-ui-engine" not in code:
+            head_injections.append(
+                """  <style id="vibeforge-nextgen-ui-engine">
+    :root {
+      --ng-canvas: #03050c;
+      --ng-surface: rgba(9, 13, 24, 0.88);
+      --ng-border: rgba(255, 255, 255, 0.09);
+      --ng-specular: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+    }
+    body {
+      background-color: var(--ng-canvas) !important;
+      background-image:
+        radial-gradient(circle at 18% 0%, rgba(99, 102, 241, 0.15), transparent 42%),
+        radial-gradient(circle at 82% 8%, rgba(6, 182, 212, 0.11), transparent 38%) !important;
+    }
+    header, section, .card, [class*="rounded-2xl"] {
+      box-shadow: var(--ng-specular), 0 18px 40px -14px rgba(0, 0, 0, 0.72);
+    }
+  </style>"""
+            )
+
         if "vibeforge-runtime-shim" not in code:
             head_injections.append(
                 """  <style id="vibeforge-ui-guard">

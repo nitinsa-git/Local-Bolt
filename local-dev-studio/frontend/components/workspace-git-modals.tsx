@@ -870,6 +870,26 @@ export function LLMSkillsModal() {
                         <button
                           type="button"
                           onClick={async () => {
+                            const nextGenPack = [
+                              "nextgen-ui",
+                              "nextgen-spatial-chrome",
+                              "nextgen-tubelight-command-bar",
+                              "nextgen-split-workbench",
+                              "nextgen-kinetic-bento-telemetry",
+                            ];
+                            const merged = Array.from(
+                              new Set([...selectedSkills, ...nextGenPack])
+                            );
+                            setSelectedSkills(merged);
+                            await persistWorkspaceSkills(merged);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/40 text-[11px] font-semibold text-cyan-200 transition"
+                        >
+                          + Append NextGen UI Pack
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
                             const qwenPack = [
                               "qwen25-coder-7b-mastery",
                               "qwen-csv-excel-analytics-engine",

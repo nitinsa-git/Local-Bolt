@@ -987,6 +987,47 @@ _RAW_SKILLS_SPEC: List[Tuple[str, str, str, str, str, List[str]]] = [
         "Audit and upgrade existing UI structure: enforce font-variant-numeric: tabular-nums on all metrics/tables, normalize border tokens to 1px rgba(255,255,255,0.08), tighten heading tracking (-0.025em), and preserve 100% of existing event handlers.",
         ["TasteSkill", "redesign-skill", "UI Audit", "Refactor"],
     ),
+    # ==================== 14. NextGen UI & Spatial Systems (5) ====================
+    (
+        "nextgen-ui",
+        "NextGen UI — Spatial Glass & Kinetic Workbench System",
+        "NextGen UI & Spatial Systems",
+        "NextGen UI design system (Linear, Cursor, Raycast & Arc inspired) with Spatial Obsidian surfaces, 1px specular hairlines, Tubelight segmented command bars, and kinetic telemetry.",
+        "Apply NextGen UI tokens: #03050c spatial obsidian canvas, rgba(9,13,24,0.88) frosted glass panels with 1px top specular highlight (inset 0 1px 0 rgba(255,255,255,0.12)), Tubelight segmented mode switchers, and tabular-nums telemetry.",
+        ["NextGen UI", "Spatial Glass", "Linear", "Arc", "Tubelight"],
+    ),
+    (
+        "nextgen-spatial-chrome",
+        "NextGen Spatial Chrome & Specular Liquid Glass",
+        "NextGen UI & Spatial Systems",
+        "Arc/Dia-inspired floating browser chrome, translucent depth layers, micro-grid canvas backdrops, and cursor-reactive radial aurora lighting.",
+        "Render floating translucent command bars with 1px specular borders, subtle dot-matrix/micro-grid canvas backgrounds, and dual-stop indigo/cyan radial aurora lighting.",
+        ["NextGen UI", "Spatial Chrome", "Liquid Glass", "Aurora"],
+    ),
+    (
+        "nextgen-tubelight-command-bar",
+        "NextGen Tubelight Segmented Command & Mode Bar",
+        "NextGen UI & Spatial Systems",
+        "Luminous top-lamp Tubelight segmented navigation pill bar paired with a keyboard-first ⌘K command omnibar and live status badges.",
+        "Include a center-aligned Tubelight segmented switcher with a glowing top lamp indicator (linear-gradient(90deg, #6366f1, #22d3ee, #a855f7)) and instant view switching.",
+        ["NextGen UI", "Tubelight", "Command Bar", "⌘K"],
+    ),
+    (
+        "nextgen-split-workbench",
+        "NextGen Collapsible Rail & Multi-Pane IDE Layout",
+        "NextGen UI & Spatial Systems",
+        "Ergonomic multi-pane workbench with a collapsible 48px activity rail, split studio panes, full-canvas cinema mode, and bottom telemetry status bar.",
+        "Structure complex applications with a collapsible left activity rail, responsive multi-pane split views, and a 26px bottom telemetry status footer.",
+        ["NextGen UI", "Workbench", "Activity Rail", "Split View"],
+    ),
+    (
+        "nextgen-kinetic-bento-telemetry",
+        "NextGen Kinetic Bento Cards & Tabular Telemetry",
+        "NextGen UI & Spatial Systems",
+        "Asymmetric Bento grid cards with animated border beams, live pulse indicators, interactive filter pills, and strict tabular-nums metrics.",
+        "Compose asymmetric 12-column Bento cards with subtle hover elevation, glowing border accents, live telemetry pills, and tabular monospace numbers.",
+        ["NextGen UI", "Kinetic Bento", "Telemetry", "Tabular Nums"],
+    ),
 ]
 
 BUILTIN_SKILLS: List[LLMSkill] = [

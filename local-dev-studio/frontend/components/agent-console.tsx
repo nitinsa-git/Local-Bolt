@@ -16,6 +16,7 @@ import {
   History,
   Loader2,
   Lock,
+  PanelLeftClose,
   Play,
   Plus,
   RotateCcw,
@@ -42,6 +43,33 @@ const TEMPLATE_LABELS: Record<string, string> = {
   "aws-ai-app": "AWS Bedrock AI App",
 };
 
+const QUICK_STARTER_BLUEPRINTS = [
+  {
+    label: "Multi-Agent RFP Council",
+    badge: "4 Agents + Judge",
+    prompt:
+      "Create a multi-agent RFP evaluation studio where 4 architecture agents debate CMS, DAM, and PIM proposals and an AI Judge synthesizes a weighted final verdict.",
+  },
+  {
+    label: "Executive FinOps Telemetry",
+    badge: "KPI + Sparklines",
+    prompt:
+      "Build an executive cloud telemetry & FinOps allocation dashboard with tabular KPI cards, interactive cost anomaly filters, and multi-region SLA breakdown.",
+  },
+  {
+    label: "Interactive 3D Motion Studio",
+    badge: "60fps Canvas",
+    prompt:
+      "Create an interactive particle & spring-physics motion studio with live parameter sliders, preset choreography switcher, and real-time FPS telemetry.",
+  },
+  {
+    label: "AI RAG Knowledge Copilot",
+    badge: "Citations + Graph",
+    prompt:
+      "Build an AI RAG enterprise knowledge copilot with hybrid vector search, clickable source citations, confidence scoring, and interactive document inspector.",
+  },
+];
+
 export function AgentConsole() {
   const {
     projectId,
@@ -53,6 +81,7 @@ export function AgentConsole() {
     setSelectedSkills,
     toggleSkill,
     setSkillsModalOpen,
+    setAgentCollapsed,
     chatHistory,
     files,
     setTemplate,
@@ -401,19 +430,47 @@ export function AgentConsole() {
     }
   };
 
-  const handleRunAgent = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const submittedPrompt = prompt.trim();
-    if (!submittedPrompt || isRunningAgent) return;
+  const handleEquipNextGenPack = async () => {
+    const nextGenIds = [
+      "nextgen-ui",
+      "nextgen-spatial-chrome",
+      "nextgen-tubelight-command-bar",
+      "nextgen-split-workbench",
+      "nextgen-kinetic-bento-telemetry",
+    ];
+    const hasAll = nextGenIds.every((id) => selectedSkills.includes(id));
+    const nextSkills = hasAll
+      ? selectedSkills.filter((id) => !nextGenIds.includes(id))
+      : Array.from(new Set([...selectedSkills, ...nextGenIds]));
+    setSelectedSkills(nextSkills);
+    try {
+      await fetch(`${BACKEND_HTTP}/api/projects/${projectId}/skills`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skills: nextSkills }),
+      });
+      appendConsoleLog(
+        hasAll
+          ? `[NextGen UI] Unequipped NextGen UI Skill Pack on workspace '${projectId}'`
+          : `[NextGen UI] Equipped NextGen UI Skill Pack (${nextSkills.length} active) on workspace '${projectId}'`
+      );
+    } catch (e) {
+      console.warn("Failed to persist NextGen UI pack:", e);
+    }
+  };
+
+  const handleDispatchPrompt = async (submittedPrompt: string) => {
+    const clean = submittedPrompt.trim();
+    if (!clean || isRunningAgent) return;
 
     const targetPid = projectId;
-    setActiveMissionPrompt(submittedPrompt);
+    setActiveMissionPrompt(clean);
     setPrompt("");
     resetSteps();
     setIsRunningAgent(true);
     setTemplateLocked(true);
     appendConsoleLog(
-      `[VibeForge] Dispatching mission (${targetPid}): "${submittedPrompt}" (Skills: ${
+      `[VibeForge] Dispatching mission (${targetPid}): "${clean}" (Skills: ${
         selectedSkills.join(", ") || "none"
       })`
     );
@@ -425,7 +482,7 @@ export function AgentConsole() {
         body: JSON.stringify({
           project_id: targetPid,
           template,
-          prompt: submittedPrompt,
+          prompt: clean,
           skills: selectedSkills,
         }),
       });
@@ -450,6 +507,11 @@ export function AgentConsole() {
     }
   };
 
+  const handleRunAgent = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await handleDispatchPrompt(prompt);
+  };
+
   const renderStepIcon = (status: string) => {
     if (status === "completed")
       return <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />;
@@ -470,13 +532,13 @@ export function AgentConsole() {
       initial={{ x: -16, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 320, damping: 28 }}
-      className="w-[420px] xl:w-[460px] shrink-0 bento-glass rounded-2xl flex flex-col h-full overflow-hidden select-none"
+      className="w-[410px] xl:w-[450px] shrink-0 bento-glass rounded-2xl flex flex-col h-full overflow-hidden select-none"
     >
       {/* Top Agent Bar */}
       <div className="px-3.5 py-2.5 border-b border-white/[0.08] flex items-center justify-between gap-2 bg-slate-950/75 shrink-0">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="p-2 rounded-xl bg-indigo-500/15 border border-indigo-400/30 shrink-0">
-            <Bot className="w-4 h-4 text-indigo-300" />
+          <div className="p-2 rounded-xl bg-cyan-500/15 border border-cyan-400/35 shrink-0">
+            <Bot className="w-4 h-4 text-cyan-300" />
           </div>
           <div className="min-w-0">
             <h2 className="font-display text-xs font-bold tracking-[-0.02em] text-slate-100 whitespace-nowrap">
@@ -508,7 +570,7 @@ export function AgentConsole() {
             <select
               value={template}
               onChange={(e) => setTemplate(e.target.value)}
-              className="bg-slate-950 border border-white/[0.08] text-slate-100 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-indigo-500/60 cursor-pointer whitespace-nowrap"
+              className="bg-slate-950 border border-white/[0.08] text-slate-100 text-xs font-semibold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-cyan-400/60 cursor-pointer whitespace-nowrap"
               title="Select Framework or AI-Native Blueprint"
             >
               <optgroup label="Web & Full-Stack">
@@ -525,6 +587,15 @@ export function AgentConsole() {
               </optgroup>
             </select>
           )}
+
+          <button
+            type="button"
+            onClick={() => setAgentCollapsed(true)}
+            className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-white/[0.08] text-slate-400 hover:text-cyan-300 transition"
+            title="Collapse Agent Console to Activity Rail"
+          >
+            <PanelLeftClose className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
@@ -555,6 +626,16 @@ export function AgentConsole() {
                 </div>
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  disabled={isRunningAgent}
+                  onClick={() => handleDispatchPrompt("reset the workspace")}
+                  className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-1 rounded-lg bg-slate-800/90 hover:bg-amber-500/20 border border-white/10 hover:border-amber-400/40 text-slate-300 hover:text-amber-200 disabled:opacity-40 transition"
+                  title="Reset workspace files to clean starter state"
+                >
+                  <RotateCcw className="w-3 h-3 text-amber-300" />
+                  <span>Reset</span>
+                </button>
                 <button
                   type="button"
                   onClick={async () => {
@@ -804,28 +885,69 @@ export function AgentConsole() {
           onSubmit={handleRunAgent}
           className={`p-3.5 flex flex-col gap-2.5 ${
             hasConversation
-              ? "border-t border-indigo-500/20 bg-slate-900/60 shrink-0"
+              ? "border-t border-cyan-500/20 bg-slate-900/60 shrink-0"
               : "flex-1 min-h-0"
           }`}
         >
-          <div className="flex items-center justify-between shrink-0">
-            <label className="font-display text-xs font-bold tracking-[-0.02em] text-slate-100">
-              {hasConversation ? "New Prompt" : "Mission Prompt"}
-            </label>
+          <div className="flex items-center justify-between gap-2 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <label className="font-display text-xs font-bold tracking-[-0.02em] text-slate-100">
+                {hasConversation ? "New Prompt" : "Mission Omnibox"}
+              </label>
+              <button
+                type="button"
+                onClick={handleEquipNextGenPack}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold transition ${
+                  selectedSkills.includes("nextgen-ui")
+                    ? "bg-cyan-500/20 border-cyan-400/45 text-cyan-200"
+                    : "bg-slate-950/80 border-white/[0.08] text-slate-400 hover:text-cyan-200"
+                }`}
+                title="Toggle NextGen UI Spatial Architecture Skill Pack"
+              >
+                <Sparkles className="w-2.5 h-2.5 text-cyan-300" />
+                <span>NextGen UI</span>
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setSkillsModalOpen(true)}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-300 hover:text-white transition tabular-nums"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-white transition tabular-nums"
             >
-              <Wand2 className="w-3 h-3 text-indigo-400" />
+              <Wand2 className="w-3 h-3 text-cyan-400" />
               <span>
                 {selectedSkills.length > 0
-                  ? `${selectedSkills.length} Skills Equipped`
-                  : `Add LLM Skills (${availableSkills.length})`}
+                  ? `${selectedSkills.length} Skills`
+                  : `Add Skills (${availableSkills.length})`}
               </span>
               <Plus className="w-3 h-3" />
             </button>
           </div>
+
+          {/* Zero-State Quick-Starter Blueprints (only when workspace conversation is empty) */}
+          {!hasConversation && (
+            <div className="grid grid-cols-2 gap-1.5 shrink-0">
+              {QUICK_STARTER_BLUEPRINTS.map((bp) => (
+                <button
+                  key={bp.label}
+                  type="button"
+                  onClick={() => setPrompt(bp.prompt)}
+                  className="text-left p-2 rounded-xl bg-slate-950/75 hover:bg-slate-900 border border-white/[0.07] hover:border-cyan-400/40 transition group"
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[11px] font-semibold text-slate-200 group-hover:text-cyan-200 truncate">
+                      {bp.label}
+                    </span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-cyan-500/10 border border-cyan-400/25 text-cyan-300 shrink-0">
+                      {bp.badge}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 line-clamp-1 mt-0.5">
+                    {bp.prompt}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* TasteSkill V2 Preset Direction Bar — Toggled ON only when a TasteSkill is selected */}
           {selectedSkills.some(
@@ -931,9 +1053,9 @@ export function AgentConsole() {
             </div>
           )}
 
-          {/* Prompt Textarea */}
+          {/* Floating Glass Prompt Omnibox */}
           <div
-            className={`relative flex flex-col ${
+            className={`relative flex flex-col rounded-xl nextgen-omnibox overflow-hidden ${
               hasConversation ? "shrink-0" : "flex-1 min-h-0"
             }`}
           >
@@ -941,7 +1063,7 @@ export function AgentConsole() {
               data-gramm="false"
               data-gramm_editor="false"
               data-enable-grammarly="false"
-              rows={hasConversation ? 3 : 6}
+              rows={hasConversation ? 3 : 5}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => {
@@ -952,28 +1074,33 @@ export function AgentConsole() {
               }}
               placeholder={
                 hasConversation
-                  ? "Enter a follow-up prompt to update the project..."
-                  : "Describe the application or feature to build..."
+                  ? "Enter a follow-up prompt (or 'reset the workspace')..."
+                  : "Describe the application, multi-agent workflow, or dashboard to build..."
               }
-              className={`w-full rounded-xl bg-slate-950/95 border border-white/[0.09] p-3 pr-10 text-xs leading-relaxed text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/25 transition resize-none ${
-                hasConversation ? "min-h-[76px]" : "flex-1 min-h-[140px]"
+              className={`w-full bg-transparent p-3 pb-8 pr-10 text-xs leading-relaxed text-white placeholder-slate-400 focus:outline-none transition resize-none ${
+                hasConversation ? "min-h-[78px]" : "flex-1 min-h-[120px]"
               }`}
             />
-            <button
-              type="submit"
-              disabled={isRunningAgent || !prompt.trim()}
-              className="absolute bottom-2.5 right-2.5 p-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white shadow-sm transition"
-              title="Send Prompt"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
+            <div className="absolute bottom-2 left-3 right-2.5 flex items-center justify-between pointer-events-none">
+              <span className="text-[10px] font-mono text-slate-500">
+                ↵ Send • ⇧↵ New line
+              </span>
+              <button
+                type="submit"
+                disabled={isRunningAgent || !prompt.trim()}
+                className="pointer-events-auto p-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 disabled:opacity-40 text-white shadow-sm transition"
+                title="Send Prompt"
+              >
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {/* Launch Autonomous Build Button */}
           <button
             type="submit"
             disabled={isRunningAgent || !prompt.trim()}
-            className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm shadow-indigo-950/50 border border-indigo-400/30 transition shrink-0 tabular-nums"
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 hover:from-cyan-500 hover:via-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-sm shadow-indigo-950/50 border border-cyan-400/30 transition shrink-0 tabular-nums"
           >
             {isRunningAgent ? (
               <>
@@ -1108,6 +1235,14 @@ export function AgentConsole() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleEquipNextGenPack}
+                        className="px-2 py-0.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/35 border border-cyan-400/40 text-[10px] font-semibold text-cyan-200 transition whitespace-nowrap"
+                        title="Append NextGen UI Spatial Architecture Skill Pack to this workspace"
+                      >
+                        + NextGen UI
+                      </button>
                       <button
                         type="button"
                         onClick={handleEquipTasteSkillPack}

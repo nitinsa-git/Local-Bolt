@@ -60,11 +60,14 @@ export interface ChatHistoryItem {
 }
 
 export type ThemeTone =
+  | "nextgen-spatial"
   | "obsidian-dark"
   | "taste-monochrome"
   | "midnight-carbon"
   | "alabaster-light"
   | "warm-ivory";
+
+export type WorkbenchMode = "split" | "ide" | "code" | "cinema";
 
 export interface ThemeToneMeta {
   id: ThemeTone;
@@ -76,6 +79,14 @@ export interface ThemeToneMeta {
 }
 
 export const STUDIO_THEMES: ThemeToneMeta[] = [
+  {
+    id: "nextgen-spatial",
+    name: "NextGen Spatial",
+    mode: "dark",
+    tagline: "Spatial obsidian glass, 1px specular & cyan-indigo aurora",
+    swatchBg: "#03050c",
+    swatchAccent: "#22d3ee",
+  },
   {
     id: "obsidian-dark",
     name: "Obsidian Pro",
@@ -124,6 +135,8 @@ interface StudioState {
   template: string;
   templateLocked: boolean;
   themeTone: ThemeTone;
+  workbenchMode: WorkbenchMode;
+  agentCollapsed: boolean;
   commandPaletteOpen: boolean;
   availableSkills: LLMSkill[];
   selectedSkills: string[];
@@ -153,6 +166,8 @@ interface StudioState {
   setTemplate: (t: string) => void;
   setTemplateLocked: (locked: boolean) => void;
   setThemeTone: (tone: ThemeTone) => void;
+  setWorkbenchMode: (mode: WorkbenchMode) => void;
+  setAgentCollapsed: (collapsed: boolean) => void;
   setCommandPaletteOpen: (open: boolean) => void;
   setAvailableSkills: (skills: LLMSkill[]) => void;
   setSelectedSkills: (skills: string[]) => void;
@@ -215,10 +230,12 @@ export const useStudioStore = create<StudioState>((set) => ({
   workspaces: [],
   template: "nextjs",
   templateLocked: false,
-  themeTone: "obsidian-dark",
+  themeTone: "nextgen-spatial",
+  workbenchMode: "split",
+  agentCollapsed: false,
   commandPaletteOpen: false,
   availableSkills: [],
-  selectedSkills: ["tokless"],
+  selectedSkills: ["tokless", "nextgen-ui"],
   chatHistory: [],
   files: [],
   activeFilePath: "app/page.tsx",
@@ -270,6 +287,20 @@ export const useStudioStore = create<StudioState>((set) => ({
     }
     set({ themeTone });
   },
+  setWorkbenchMode: (workbenchMode) =>
+    set(() => {
+      if (workbenchMode === "split") {
+        return { workbenchMode: "split", showEditor: false, agentCollapsed: false };
+      }
+      if (workbenchMode === "ide") {
+        return { workbenchMode: "ide", showEditor: true, agentCollapsed: false };
+      }
+      if (workbenchMode === "code") {
+        return { workbenchMode: "code", showEditor: true, agentCollapsed: false };
+      }
+      return { workbenchMode: "cinema", showEditor: false, agentCollapsed: true };
+    }),
+  setAgentCollapsed: (agentCollapsed) => set({ agentCollapsed }),
   setCommandPaletteOpen: (commandPaletteOpen) => set({ commandPaletteOpen }),
   setAvailableSkills: (availableSkills) => set({ availableSkills }),
   setSelectedSkills: (selectedSkills) => set({ selectedSkills }),
@@ -329,7 +360,17 @@ export const useStudioStore = create<StudioState>((set) => ({
       return { openTabs: nextTabs, activeFilePath: nextActive };
     }),
   setShowDiffView: (showDiffView) => set({ showDiffView }),
-  setShowEditor: (showEditor) => set({ showEditor }),
+  setShowEditor: (showEditor) =>
+    set((state) => ({
+      showEditor,
+      workbenchMode: showEditor
+        ? state.workbenchMode === "code"
+          ? "code"
+          : "ide"
+        : state.workbenchMode === "cinema"
+          ? "cinema"
+          : "split",
+    })),
   setShowPreviewConsole: (showPreviewConsole) => set({ showPreviewConsole }),
   setShowWorkspaceFiles: (showWorkspaceFiles) => set({ showWorkspaceFiles }),
   setShowSteppedProgress: (showSteppedProgress) => set({ showSteppedProgress }),
