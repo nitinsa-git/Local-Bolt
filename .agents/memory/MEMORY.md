@@ -1,7 +1,7 @@
-# Project Memory: Local Bolt (VibeForge / Local Dev Studio)
+# Project Memory: VibeForge — Spatial AI Application & Vibe-Coding Studio
 
 ## 1. Project Identity & Tech Stack
-- **Project Name**: Local Bolt (`local-dev-studio` / VibeForge)
+- **Project Name**: VibeForge (`local-dev-studio`)
 - **Workspace Root**: `c:/GITs/AGs/Local Bolt`
 - **GitHub Repository**: `https://github.com/nitinsa-git/Local-Bolt.git` (`main` branch)
 - **Production AWS Deployment**:

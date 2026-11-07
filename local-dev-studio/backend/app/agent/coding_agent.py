@@ -218,7 +218,7 @@ server.listen(port, '0.0.0.0', () => {
     ) -> Dict[str, Any]:
         """
         CuriousLLM Base-Engine Multi-Hop Reasoning & Gap Probe:
-        Executes internally inside Local Bolt's CodingAgent before code synthesis:
+        Executes internally inside VibeForge's CodingAgent before code synthesis:
         1. Probes known workspace AST evidence (existing DOM IDs, JS functions, prompt history).
         2. Generates targeted Follow-Up Queries ([FOLLOW_UP_QUERY]) to bridge missing domain,
            interactive state, and multi-turn continuity gaps.

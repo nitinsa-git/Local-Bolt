@@ -24,9 +24,10 @@ const fontMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VibeForge — Pure Local Vibe-Coding Engine",
+  title: "VibeForge — Spatial AI Application & Vibe-Coding Studio",
+  applicationName: "VibeForge",
   description:
-    "Pure local vibe-coding engine that synthesizes full-stack apps, runs terminal commands in isolated sandboxes, and live-previews results.",
+    "VibeForge is an autonomous spatial AI application & vibe-coding studio powered by NextGen UI, CuriousLLM multi-hop reasoning, isolated SQLite + RAG runtimes, and live container previews.",
   icons: {
     icon: "/vibeforge-icon.svg",
     shortcut: "/vibeforge-icon.svg",

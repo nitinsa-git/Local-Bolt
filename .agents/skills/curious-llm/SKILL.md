@@ -1,11 +1,11 @@
 ---
 name: CuriousLLM — Base-Engine Reasoning & Higher-LLM Local Server Skill
-description: Base-application skill for Local Bolt (VibeForge) that enables the local LLM server (llama-server :8780 & Ollama :11434) to run higher-parameter LLMs (14B, 32B, DeepSeek-R1, QwQ, Qwen2.5-Coder-7B/14B/32B) via quantized KV-cache, Flash Attention, and mmap layer streaming, paired with an internal Curiosity-Driven Multi-Hop Reasoning Loop ([FOLLOW_UP_QUERY] -> [ENOUGH_EVIDENCE]).
+description: Base-application skill for VibeForge that enables the local LLM server (llama-server :8780 & Ollama :11434) to run higher-parameter LLMs (14B, 32B, DeepSeek-R1, QwQ, Qwen2.5-Coder-7B/14B/32B) via quantized KV-cache, Flash Attention, and mmap layer streaming, paired with an internal Curiosity-Driven Multi-Hop Reasoning Loop ([FOLLOW_UP_QUERY] -> [ENOUGH_EVIDENCE]).
 ---
 
 # CuriousLLM — Base-Engine Reasoning & Higher-LLM Local Server Skill
 
-> **Scope**: This skill operates strictly at the **Local Bolt Base Application level** (`LocalLLMManager` and `CodingAgent`). It is an internal server-side reasoning and model-scaling engine for Local Bolt itself, not a UI widget injected into user projects.
+> **Scope**: This skill operates strictly at the **VibeForge Base Application level** (`LocalLLMManager` and `CodingAgent`). It is an internal server-side reasoning and model-scaling engine for VibeForge itself, not a UI widget injected into user projects.
 
 ---
 
@@ -15,7 +15,7 @@ Running high-parameter coding and reasoning models (`14B`, `32B`, `DeepSeek-R1`,
 1. **Memory Wall (VRAM / RAM OOM)**: Unquantized FP16 KV-caches and full-weight allocations cause Out-Of-Memory crashes when context windows grow beyond 4K–8K tokens.
 2. **Single-Pass Reasoning Fragility**: Standard one-shot prompting forces a local model to guess missing architectural bridges, state transitions, and data schemas in a single forward pass.
 
-**CuriousLLM** solves both inside Local Bolt's backend engine:
+**CuriousLLM** solves both inside VibeForge's backend engine:
 - **Layer 1 — Hardware-Aware Higher-LLM Server Scaling (`LocalLLMManager`)**: Profiles host RAM, swap, and GPU memory to launch `llama-server` (`:8780`) and configure `Ollama` (`:11434`) with **8-bit/4-bit Quantized KV-Caches (`q8_0` / `q4_0`)**, **Flash Attention (`-fa`)**, and **Memory-Mapped Weight Streaming (`--mmap`)**, reducing memory overhead by 50–70% so higher-parameter models run smoothly on local servers.
 - **Layer 2 — Curiosity-Driven Multi-Hop Reasoning Loop (`CodingAgent`)**: Before generating application code, the agent performs an internal **Curiosity Gap Probe** that decomposes the prompt into:
   1. `KNOWN_EVIDENCE`: Existing workspace files, DOM IDs, state structures, and explicit user requirements.

@@ -32,7 +32,7 @@ Use this skill whenever the user asks to design, build, generate code for, or vi
    - Prefer AWS Graviton4 (`arm64`) for Lambda, ECS Fargate, RDS, and ElastiCache for up to 40% better price-performance.
    - Use S3 Intelligent-Tiering / Lifecycle rules, DynamoDB On-Demand or Auto-Scaled Provisioned capacity, and CloudFront edge caching to minimize data transfer egress.
 4. **Interactive AWS Console & Architecture Visualization (For Web / Studio Apps)**:
-   - When synthesizing an AWS dashboard, architecture designer, or FinOps portal in Local Bolt (`VibeForge`), include:
+   - When synthesizing an AWS dashboard, architecture designer, or FinOps portal in `VibeForge`, include:
      - **Region Selector** (`us-east-1`, `us-west-2`, `eu-central-1`, `ap-south-1`) that dynamically filters resources and telemetry.
      - **Interactive Service Topology / Resource Inventory Table** with live health status badges (`HEALTHY`, `SCALING`, `THROTTLED`), ARN copy buttons, and latency/cost metrics.
      - **Copy-Ready IaC Code Inspector Tabs** providing synchronized **AWS CDK (TypeScript)**, **Terraform (`main.tf`)**, and **IAM Policy (`policy.json`)** snippets for the selected AWS service or architecture.

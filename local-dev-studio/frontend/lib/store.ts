@@ -279,6 +279,7 @@ export const useStudioStore = create<StudioState>((set) => ({
   setThemeTone: (themeTone) => {
     if (typeof window !== "undefined") {
       try {
+        window.localStorage.setItem("vibeforge-studio-theme", themeTone);
         window.localStorage.setItem("local-dev-studio-theme", themeTone);
         document.documentElement.setAttribute("data-theme", themeTone);
       } catch {

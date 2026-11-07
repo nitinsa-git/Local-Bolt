@@ -1038,8 +1038,8 @@ BUILTIN_SKILLS: List[LLMSkill] = [
 
 class SkillsRegistry:
     """
-    Manages available LLM Skills for Local Dev Studio.
-    - Includes 84 built-in specialized engineering, design, animation, AI, data, backend, security, cloud, and SaaS skills.
+    Manages available LLM Skills for VibeForge Studio.
+    - Includes 89 built-in specialized engineering, design, animation, AI, data, backend, security, cloud, and SaaS skills.
     - Automatically discovers all `SKILL.md` files installed in:
       1. `<workspace>/.agents/skills/*/SKILL.md`
       2. `~/.gemini/antigravity/builtin/skills/*/SKILL.md`
@@ -1110,7 +1110,7 @@ class SkillsRegistry:
         except Exception:
             return None
 
-    # Core server-level governance skills that belong to Local Bolt's base engine
+    # Core server-level governance skills that belong to VibeForge's base engine
     # (configured in Core Governance) and must NOT be listed as workspace-level project skills.
     CORE_GOVERNANCE_ONLY_SKILLS = {"curious-llm"}
 

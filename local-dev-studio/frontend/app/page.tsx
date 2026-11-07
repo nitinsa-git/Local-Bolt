@@ -156,9 +156,8 @@ export default function StudioPage() {
   useEffect(() => {
     setPreviewUrl(`/api/projects/${projectId}/preview`);
     try {
-      const saved = window.localStorage.getItem(
-        "local-dev-studio-theme"
-      ) as ThemeTone | null;
+      const saved = (window.localStorage.getItem("vibeforge-studio-theme") ||
+        window.localStorage.getItem("local-dev-studio-theme")) as ThemeTone | null;
       if (saved && STUDIO_THEMES.some((t) => t.id === saved)) {
         setThemeTone(saved);
       } else {
@@ -211,7 +210,7 @@ export default function StudioPage() {
         transition={{ type: "spring", stiffness: 340, damping: 28 }}
         className="bento-glass nextgen-ribbon rounded-2xl h-13 px-3.5 py-2 flex items-center justify-between gap-3 shrink-0 z-20"
       >
-        {/* Left: Local Bolt / VibeForge Brand + NextGen UI Badge + Breadcrumb Workspace Selector + ⌘K */}
+        {/* Left: VibeForge Brand + NextGen UI Badge + Breadcrumb Workspace Selector + ⌘K */}
         <div className="flex items-center gap-2.5 shrink-0">
           <motion.div
             whileHover={{ rotate: 6, scale: 1.04 }}
@@ -225,7 +224,7 @@ export default function StudioPage() {
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <h1 className="font-display text-sm font-extrabold tracking-[-0.03em] whitespace-nowrap text-slate-100">
-                  Local Bolt
+                  VibeForge
                 </h1>
                 <span className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-cyan-500/15 border border-cyan-400/35 text-[9px] font-mono font-semibold uppercase tracking-wider text-cyan-200 tabular-nums">
                   <Sparkles className="w-2.5 h-2.5 text-cyan-300" />
@@ -233,7 +232,7 @@ export default function StudioPage() {
                 </span>
               </div>
               <span className="text-[9px] font-mono text-slate-400 leading-none hidden sm:inline">
-                VibeForge Spatial AI Studio
+                Spatial AI Engineering Studio
               </span>
             </div>
           </div>
@@ -246,14 +245,14 @@ export default function StudioPage() {
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               className="appearance-none text-xs font-mono font-semibold pl-3 pr-7 py-1.5 rounded-xl bg-slate-950/85 hover:bg-slate-900 text-slate-100 border border-white/[0.09] hover:border-cyan-400/40 cursor-pointer focus:outline-none focus:border-cyan-400/60 transition whitespace-nowrap tabular-nums"
-              title="Switch Active Workspace"
+              title="Switch Active VibeForge Workspace"
             >
               {workspaces.length === 0 ? (
-                <option value={projectId}>ws://{projectId}</option>
+                <option value={projectId}>vf://{projectId}</option>
               ) : (
                 workspaces.map((ws) => (
                   <option key={ws.project_id} value={ws.project_id}>
-                    ws://{ws.project_id} ({ws.file_count} files)
+                    vf://{ws.project_id} ({ws.file_count} files)
                   </option>
                 ))
               )}
@@ -580,9 +579,9 @@ export default function StudioPage() {
             type="button"
             onClick={() => setWorkspaceModalOpen(true)}
             className="hover:text-cyan-300 transition truncate"
-            title="Switch or Create Workspace"
+            title="Switch or Create VibeForge Workspace"
           >
-            ws://{projectId} ({files.length} files)
+            vf://{projectId} ({files.length} files)
           </button>
 
           <span className="text-slate-700 hidden md:inline">|</span>
